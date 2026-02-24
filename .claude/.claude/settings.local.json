@@ -1,0 +1,34 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(dir:*)",
+      "Bash(pip --version:*)",
+      "Bash(python -c:*)",
+      "Bash(python:*)",
+      "Bash(pip install:*)",
+      "Bash(where:*)",
+      "Bash(ls:*)",
+      "Bash(findstr:*)",
+      "Bash(powershell -Command:*)",
+      "Bash(powershell -ExecutionPolicy Bypass -File \"C:\\\\Users\\\\User\\\\Downloads\\\\rename_crdownload.ps1\")",
+      "Bash(powershell:*)",
+      "WebFetch(domain:en.puroland.jp)",
+      "WebFetch(domain:www.puroland.jp)",
+      "WebFetch(domain:www.kkday.com)",
+      "WebFetch(domain:www.klook.com)",
+      "WebFetch(domain:experiences.travel.rakuten.com)",
+      "Bash(copy:*)",
+      "Bash(copy \"C:\\\\Users\\\\User\\\\OneDrive\\\\ClaudeProjects\\\\2026_Tokyo_WBC\\\\gen_mobile_pdf.py\" \"C:\\\\Users\\\\User\\\\OneDrive\\\\ClaudeProjects\\\\trip-doc-generator\\\\gen_mobile_pdf.py\")",
+      "Bash(git -C \"C:\\\\Users\\\\User\\\\OneDrive\\\\ClaudeProjects\\\\trip-doc-generator\" status)",
+      "Bash(git -C \"C:\\\\Users\\\\User\\\\OneDrive\\\\ClaudeProjects\\\\trip-doc-generator\" log --oneline -5)",
+      "Bash(git -C \"C:\\\\Users\\\\User\\\\OneDrive\\\\ClaudeProjects\\\\trip-doc-generator\" add .gitignore gen_word.py gen_mobile_pdf.py requirements.txt trip_data.sample.json)",
+      "Bash(git -C \"C:\\\\Users\\\\User\\\\OneDrive\\\\ClaudeProjects\\\\trip-doc-generator\" commit -m \"$\\(cat <<''EOF''\nInitial commit: trip document generators\n\nGeneric Word and mobile PDF generators that read trip data from JSON.\nIncludes sample JSON template for creating new trip itineraries.\n\nCo-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>\nEOF\n\\)\")",
+      "Bash(git -C \"C:\\\\Users\\\\User\\\\OneDrive\\\\ClaudeProjects\\\\trip-doc-generator\" config user.name \"ian20140623\")",
+      "Bash(git -C \"C:\\\\Users\\\\User\\\\OneDrive\\\\ClaudeProjects\\\\trip-doc-generator\" config user.email \"ianchang.tw@gmail.com\")",
+      "Bash(git -C \"C:\\\\Users\\\\User\\\\OneDrive\\\\ClaudeProjects\\\\trip-doc-generator\" log --oneline)",
+      "Bash(git -C \"C:\\\\Users\\\\User\\\\OneDrive\\\\ClaudeProjects\\\\trip-doc-generator\" add README.md)",
+      "Bash(git -C \"C:\\\\Users\\\\User\\\\OneDrive\\\\ClaudeProjects\\\\trip-doc-generator\" commit -m \"$\\(cat <<''EOF''\nAdd README with usage guide in Chinese\n\nCo-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>\nEOF\n\\)\")",
+      "Bash(robocopy:*)"
+    ]
+  }
+}
