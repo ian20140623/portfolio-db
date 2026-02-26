@@ -1,7 +1,7 @@
 # CLAUDE.md — portfolio-db
 
 > 專案資訊見 system_map.md
-> 共用指引見 ../shared/LOG_GUIDE.md
+> 共用指引與環境規則見 ../shared/CLAUDE.md、../shared/LOG_GUIDE.md
 
 ## 執行
 - `python -m portfoliodb <command>`
