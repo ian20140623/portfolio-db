@@ -4,7 +4,8 @@ Prerequisites:
     1. pip install shioaji
     2. Apply for API Key at SinoPac (need to visit branch in person)
     3. Download Sinopac.pfx certificate
-    4. Add credentials to ~/AppData/Local/PortfolioDB/credentials.json:
+    4. Add credentials to the per-OS app-data dir as credentials.json
+       (see portfoliodb.brokers.config.CREDENTIALS_PATH):
        {
            "sinopac": {
                "api_key": "YOUR_API_KEY",

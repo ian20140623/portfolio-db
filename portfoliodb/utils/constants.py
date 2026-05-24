@@ -7,7 +7,7 @@ MARKETS = {
     "SG": {"currency": "SGD", "suffix": ".SI", "name": "新加坡", "name_en": "Singapore"},
 }
 
-CURRENCIES = {"TWD", "USD", "SGD"}
+CURRENCIES = {"TWD", "USD", "SGD", "HKD", "JPY", "EUR", "CNY", "GBP", "AUD", "NZD", "ZAR"}
 
 # Valid market-currency pairings
 MARKET_CURRENCY = {
@@ -43,6 +43,14 @@ CURRENCY_SYMBOLS = {
     "TWD": "NT$",
     "USD": "$",
     "SGD": "S$",
+    "HKD": "HK$",
+    "JPY": "¥",
+    "EUR": "€",
+    "CNY": "¥",
+    "GBP": "£",
+    "AUD": "A$",
+    "NZD": "NZ$",
+    "ZAR": "R",
 }
 
 # Yahoo Finance FX ticker format: e.g. "USDTWD=X"

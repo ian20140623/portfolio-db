@@ -6,16 +6,18 @@ from portfoliodb.utils.constants import MARKETS, MARKET_CURRENCY, ACCOUNT_TYPES
 
 
 def create_account(
-    user_id: int,
+    legal_owner_id: int,
+    economic_owner_id: int,
     account_name: str,
     broker: str,
     market: str,
     account_type: str = "brokerage",
 ) -> Account:
-    """Create a new account for a user.
+    """Create a new account.
 
     Args:
-        user_id: Owner user ID
+        legal_owner_id: 法律名義人 user ID（戶頭掛在誰名下）
+        economic_owner_id: 實際擁有人 user ID（誰的錢／誰承擔損益）
         account_name: Display name (e.g. "Fubon TW Brokerage")
         broker: Broker name (e.g. "Fubon", "Interactive Brokers")
         market: Market code - "TW", "US", or "SG"
@@ -27,14 +29,14 @@ def create_account(
     if account_type not in ACCOUNT_TYPES:
         raise ValueError(f"Invalid account type '{account_type}'. Must be one of: {', '.join(ACCOUNT_TYPES)}")
 
-    # Auto-assign currency based on market
     currency = MARKET_CURRENCY[market]
 
     with get_connection() as conn:
         cursor = conn.execute(
-            """INSERT INTO accounts (user_id, account_name, broker, market, currency, account_type)
-               VALUES (?, ?, ?, ?, ?, ?)""",
-            (user_id, account_name, broker, market, currency, account_type),
+            """INSERT INTO accounts
+                 (legal_owner_id, economic_owner_id, account_name, broker, market, currency, account_type)
+               VALUES (?, ?, ?, ?, ?, ?, ?)""",
+            (legal_owner_id, economic_owner_id, account_name, broker, market, currency, account_type),
         )
         row = conn.execute(
             "SELECT * FROM accounts WHERE id = ?", (cursor.lastrowid,)
@@ -53,18 +55,22 @@ def get_account(account_id: int) -> Account:
         return Account.from_row(row)
 
 
-def list_accounts(user_id: int = None) -> list[Account]:
-    """List accounts, optionally filtered by user."""
+def list_accounts(
+    legal_owner_id: int = None,
+    economic_owner_id: int = None,
+) -> list[Account]:
+    """List accounts, optionally filtered by legal or economic owner."""
+    clauses = ["is_active = 1"]
+    params: list = []
+    if legal_owner_id is not None:
+        clauses.append("legal_owner_id = ?")
+        params.append(legal_owner_id)
+    if economic_owner_id is not None:
+        clauses.append("economic_owner_id = ?")
+        params.append(economic_owner_id)
+    sql = f"SELECT * FROM accounts WHERE {' AND '.join(clauses)} ORDER BY id"
     with get_connection() as conn:
-        if user_id is not None:
-            rows = conn.execute(
-                "SELECT * FROM accounts WHERE user_id = ? AND is_active = 1 ORDER BY id",
-                (user_id,),
-            ).fetchall()
-        else:
-            rows = conn.execute(
-                "SELECT * FROM accounts WHERE is_active = 1 ORDER BY id"
-            ).fetchall()
+        rows = conn.execute(sql, params).fetchall()
         return [Account.from_row(r) for r in rows]
 
 

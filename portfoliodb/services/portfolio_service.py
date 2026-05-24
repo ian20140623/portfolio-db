@@ -76,18 +76,13 @@ def get_account_summary(account_id: int) -> dict:
 
 
 def get_user_summary(username: str, base_currency: str = "TWD") -> dict:
-    """Get summary across all accounts for a user, converted to base currency.
+    """Get summary across all accounts where this user is the **economic owner**,
+    converted to base currency.
 
-    Returns:
-        {
-            "user": User,
-            "accounts": [account_summary, ...],
-            "grand_total": float,  (in base_currency)
-            "base_currency": str,
-        }
+    Reflects真實 portfolio (誰的錢)，not legal name on file.
     """
     user = get_user_by_username(username)
-    accounts = account_service.list_accounts(user_id=user.id)
+    accounts = account_service.list_accounts(economic_owner_id=user.id)
 
     # Pre-fetch FX rates
     fx_rates = fx_service.get_all_rates(base_currency)
@@ -110,6 +105,104 @@ def get_user_summary(username: str, base_currency: str = "TWD") -> dict:
         "accounts": account_summaries,
         "grand_total": grand_total,
         "base_currency": base_currency,
+    }
+
+
+def get_family_breakdown(base_currency: str = "TWD") -> dict:
+    """Family-wide flat breakdown: every position (stock + cash) across all accounts,
+    plus multi-dimensional aggregations.
+
+    Used for top-down portfolio review: concentration, owner split, currency mix, etc.
+    """
+    from portfoliodb.services.user_service import get_user
+
+    accounts = account_service.list_accounts()
+    fx_rates = fx_service.get_all_rates(base_currency)
+    user_cache: dict[int, str] = {}
+
+    def name_of(uid: int) -> str:
+        if uid not in user_cache:
+            user_cache[uid] = get_user(uid).display_name
+        return user_cache[uid]
+
+    positions: list[dict] = []
+
+    for acc in accounts:
+        holdings = holding_service.list_holdings(acc.id)
+        cash_positions = cash_service.list_cash(acc.id)
+        rate = fx_rates.get(acc.currency, 1.0)
+
+        if holdings:
+            prices = price_service.fetch_prices([h.ticker for h in holdings])
+        else:
+            prices = {}
+
+        for h in holdings:
+            current = prices.get(h.ticker, {}).get("price")
+            mv_local = (current or 0) * h.shares
+            mv_base = mv_local * rate
+            positions.append({
+                "type": "stock", "ticker": h.ticker,
+                "shares": h.shares, "avg_cost": h.avg_cost,
+                "current_price": current,
+                "currency": acc.currency,
+                "mv_local": mv_local, "mv_base": mv_base,
+                "account_id": acc.id, "account_name": acc.account_name,
+                "broker": acc.broker, "market": acc.market,
+                "account_type": acc.account_type,
+                "legal_owner": name_of(acc.legal_owner_id),
+                "economic_owner": name_of(acc.economic_owner_id),
+            })
+
+        for cp in cash_positions:
+            cp_rate = fx_rates.get(cp.currency, 1.0)
+            positions.append({
+                "type": "cash", "ticker": cp.currency,
+                "shares": None, "avg_cost": None, "current_price": None,
+                "currency": cp.currency,
+                "mv_local": cp.balance, "mv_base": cp.balance * cp_rate,
+                "account_id": acc.id, "account_name": acc.account_name,
+                "broker": acc.broker, "market": acc.market,
+                "account_type": acc.account_type,
+                "legal_owner": name_of(acc.legal_owner_id),
+                "economic_owner": name_of(acc.economic_owner_id),
+            })
+
+    positions.sort(key=lambda p: -p["mv_base"])
+    grand_total = sum(p["mv_base"] for p in positions)
+
+    for p in positions:
+        p["weight"] = (p["mv_base"] / grand_total * 100) if grand_total else 0
+
+    def _group(key_fn):
+        groups: dict = {}
+        for p in positions:
+            k = key_fn(p)
+            groups[k] = groups.get(k, 0) + p["mv_base"]
+        return dict(sorted(groups.items(), key=lambda x: -x[1]))
+
+    aggregations = {
+        "by_economic_owner": _group(lambda p: p["economic_owner"]),
+        "by_legal_owner":    _group(lambda p: p["legal_owner"]),
+        "by_type":           _group(lambda p: p["type"]),
+        "by_currency":       _group(lambda p: p["currency"]),
+        "by_market":         _group(lambda p: p["market"]),
+        "by_broker":         _group(lambda p: p["broker"]),
+        "by_account_type":   _group(lambda p: p["account_type"]),
+        # Ticker-level concentration: stocks only, merged across accounts
+        "by_ticker": dict(sorted(
+            ((t, sum(p["mv_base"] for p in positions if p["type"]=="stock" and p["ticker"]==t))
+             for t in {p["ticker"] for p in positions if p["type"]=="stock"}),
+            key=lambda x: -x[1],
+        )),
+    }
+
+    return {
+        "positions": positions,
+        "aggregations": aggregations,
+        "grand_total": grand_total,
+        "base_currency": base_currency,
+        "fx_rates": fx_rates,
     }
 
 

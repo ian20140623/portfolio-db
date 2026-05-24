@@ -8,7 +8,7 @@ from portfoliodb.db import init_db
 from portfoliodb.utils.formatting import (
     format_currency, format_pnl, format_percent, format_shares, pnl_color,
 )
-from portfoliodb.utils.constants import CURRENCY_SYMBOLS
+from portfoliodb.utils.constants import CURRENCIES, CURRENCY_SYMBOLS
 
 console = Console()
 
@@ -80,47 +80,70 @@ def account():
 
 
 @account.command("add")
-@click.argument("username")
+@click.argument("legal_owner")
 @click.argument("account_name")
 @click.argument("broker")
 @click.argument("market", type=click.Choice(["TW", "US", "SG"], case_sensitive=False))
+@click.option("--economic-owner", "economic_owner", default=None,
+              help="實際擁有人 username（不給=同 legal_owner）")
 @click.option("--type", "account_type", default="brokerage",
               type=click.Choice(["brokerage", "bank"]), help="Account type")
-def account_add(username, account_name, broker, market, account_type):
-    """Create a new account. Example: account add alice "Fubon TW" Fubon TW"""
+def account_add(legal_owner, account_name, broker, market, economic_owner, account_type):
+    """Create an account.
+
+    LEGAL_OWNER = 戶頭掛在誰名下；--economic-owner = 實際是誰的錢（預設同 legal）
+
+    Examples:
+      account add ian "Firstrade" Firstrade US
+      account add dad "Fubon TW" Fubon TW --economic-owner ian
+    """
     from portfoliodb.services.user_service import get_user_by_username
     from portfoliodb.services.account_service import create_account
     try:
-        u = get_user_by_username(username)
-        acc = create_account(u.id, account_name, broker, market.upper(), account_type)
+        legal = get_user_by_username(legal_owner)
+        economic = get_user_by_username(economic_owner) if economic_owner else legal
+        acc = create_account(
+            legal.id, economic.id, account_name, broker,
+            market.upper(), account_type,
+        )
+        same = legal.id == economic.id
+        owner_label = legal.display_name if same else f"{legal.display_name} → {economic.display_name}"
         console.print(
             f"[green][OK][/green] Account created: {acc.account_name} "
-            f"({acc.broker}, {acc.market}/{acc.currency}) [bold][ID: {acc.id}][/bold]"
+            f"({acc.broker}, {acc.market}/{acc.currency}, owner: {owner_label}) "
+            f"[bold][ID: {acc.id}][/bold]"
         )
     except Exception as e:
         console.print(f"[red][ERROR][/red] {e}")
 
 
 @account.command("list")
-@click.option("--user", "username", default=None, help="Filter by username")
-def account_list(username):
+@click.option("--legal", "legal_username", default=None, help="Filter by legal owner")
+@click.option("--economic", "economic_username", default=None,
+              help="Filter by economic owner（誰的錢）")
+def account_list(legal_username, economic_username):
     """List accounts."""
     from portfoliodb.services.account_service import list_accounts
-    from portfoliodb.services.user_service import get_user_by_username
+    from portfoliodb.services.user_service import get_user, get_user_by_username
 
-    user_id = None
-    if username:
-        u = get_user_by_username(username)
-        user_id = u.id
+    legal_id = get_user_by_username(legal_username).id if legal_username else None
+    economic_id = get_user_by_username(economic_username).id if economic_username else None
 
-    accounts = list_accounts(user_id=user_id)
+    accounts = list_accounts(legal_owner_id=legal_id, economic_owner_id=economic_id)
     if not accounts:
         console.print("No accounts found.")
         return
 
+    user_cache = {}
+    def name_of(uid):
+        if uid not in user_cache:
+            user_cache[uid] = get_user(uid).display_name
+        return user_cache[uid]
+
     table = Table(title="Accounts")
     table.add_column("ID", style="cyan")
-    table.add_column("User ID")
+    table.add_column("Legal Owner")
+    table.add_column("Economic Owner")
     table.add_column("Account Name", style="bold")
     table.add_column("Broker")
     table.add_column("Market")
@@ -128,8 +151,10 @@ def account_list(username):
     table.add_column("Type")
     for a in accounts:
         table.add_row(
-            str(a.id), str(a.user_id), a.account_name,
-            a.broker, a.market, a.currency, a.account_type,
+            str(a.id),
+            name_of(a.legal_owner_id),
+            name_of(a.economic_owner_id),
+            a.account_name, a.broker, a.market, a.currency, a.account_type,
         )
     console.print(table)
 
@@ -307,7 +332,7 @@ def cash():
 
 @cash.command("set")
 @click.argument("account_id", type=int)
-@click.argument("currency", type=click.Choice(["TWD", "USD", "SGD"], case_sensitive=False))
+@click.argument("currency", type=click.Choice(sorted(CURRENCIES), case_sensitive=False))
 @click.argument("amount", type=float)
 def cash_set(account_id, currency, amount):
     """Set cash balance directly. Example: cash set 1 TWD 500000"""
@@ -326,7 +351,7 @@ def cash_set(account_id, currency, amount):
 
 @cash.command("deposit")
 @click.argument("account_id", type=int)
-@click.argument("currency", type=click.Choice(["TWD", "USD", "SGD"], case_sensitive=False))
+@click.argument("currency", type=click.Choice(sorted(CURRENCIES), case_sensitive=False))
 @click.argument("amount", type=float)
 @click.option("--date", "executed_at", default=None, help="Date (YYYY-MM-DD)")
 @click.option("--desc", "description", default=None, help="Description")
@@ -346,7 +371,7 @@ def cash_deposit(account_id, currency, amount, executed_at, description):
 
 @cash.command("withdraw")
 @click.argument("account_id", type=int)
-@click.argument("currency", type=click.Choice(["TWD", "USD", "SGD"], case_sensitive=False))
+@click.argument("currency", type=click.Choice(sorted(CURRENCIES), case_sensitive=False))
 @click.argument("amount", type=float)
 @click.option("--date", "executed_at", default=None, help="Date (YYYY-MM-DD)")
 @click.option("--desc", "description", default=None, help="Description")
@@ -687,6 +712,81 @@ def summary_all(base_currency):
     console.print()
 
 
+@summary.command("breakdown")
+@click.option("--currency", "base_currency", default="TWD", help="Base currency")
+def summary_breakdown(base_currency):
+    """Family-wide breakdown: every position + multi-dim aggregations."""
+    from portfoliodb.services.portfolio_service import get_family_breakdown
+
+    init_db()
+    base = base_currency.upper()
+    s = get_family_breakdown(base)
+    total = s["grand_total"]
+
+    console.print()
+    console.rule(f"[bold] Family Portfolio Breakdown ({base}) [/bold]")
+    console.print(
+        f"  總資產: [bold]{format_currency(total, base)}[/bold]   "
+        f"FX: " + ", ".join(f"{c}={r:.4f}" for c, r in s["fx_rates"].items() if c != base)
+    )
+
+    labels = {
+        "by_economic_owner": "經濟所有人",
+        "by_legal_owner":    "法律名義人",
+        "by_type":           "資產類別 (stock/cash)",
+        "by_currency":       "幣別",
+        "by_market":         "市場",
+        "by_broker":         "券商/銀行",
+        "by_account_type":   "帳戶類型",
+        "by_ticker":         "個股 concentration",
+    }
+    for key, label in labels.items():
+        t = Table(title=f"by {label}", show_header=True, header_style="bold")
+        t.add_column("項目")
+        t.add_column(f"{base} 市值", justify="right")
+        t.add_column("%", justify="right")
+        for k, v in s["aggregations"][key].items():
+            pct = v / total * 100 if total else 0
+            t.add_row(str(k), format_currency(v, base), f"{pct:.1f}%")
+        console.print(t)
+
+    flat = Table(
+        title="Flat positions (every holding + cash, sorted by base-currency value)",
+        show_header=True, header_style="bold",
+    )
+    flat.add_column("#", justify="right", no_wrap=True)
+    flat.add_column("類別", no_wrap=True)
+    flat.add_column("標的", no_wrap=True)
+    flat.add_column("股數", justify="right", no_wrap=True)
+    flat.add_column("均價", justify="right", no_wrap=True)
+    flat.add_column("現價", justify="right", no_wrap=True)
+    flat.add_column("幣", no_wrap=True)
+    flat.add_column("原幣市值", justify="right", no_wrap=True)
+    flat.add_column(f"{base} 市值", justify="right", no_wrap=True)
+    flat.add_column("%", justify="right", no_wrap=True)
+    flat.add_column("帳戶", no_wrap=True)
+    flat.add_column("econ", no_wrap=True)
+
+    for i, p in enumerate(s["positions"], 1):
+        flat.add_row(
+            str(i),
+            "股票" if p["type"] == "stock" else "現金",
+            p["ticker"],
+            f"{p['shares']:,.4f}" if p["shares"] is not None else "",
+            f"{p['avg_cost']:.4f}" if p["avg_cost"] is not None else "",
+            f"{p['current_price']:.2f}" if p["current_price"] is not None else "",
+            p["currency"],
+            format_currency(p["mv_local"], p["currency"]),
+            format_currency(p["mv_base"], base),
+            f"{p['weight']:.1f}%",
+            p["account_name"],
+            p["economic_owner"],
+        )
+    # Use a wider console for the flat table so columns don't get truncated.
+    Console(width=200).print(flat)
+    console.print()
+
+
 # ─── fx commands ─────────────────────────────────────────────────────
 
 @cli.group()
@@ -754,10 +854,10 @@ def sync_sinopac_cmd(account_id):
         console.print(f"[red][ERROR][/red] {e}")
         console.print("Install with: [bold]pip install shioaji[speed][/bold]")
     except FileNotFoundError as e:
+        from portfoliodb.brokers.config import CREDENTIALS_PATH
         console.print(f"[red][ERROR][/red] {e}")
         console.print(
-            "\nCreate credentials file at:\n"
-            "  ~/AppData/Local/PortfolioDB/credentials.json\n"
+            f"\nCreate credentials file at:\n  {CREDENTIALS_PATH}\n"
             "\nFormat:\n"
             '  {"sinopac": {"api_key": "...", "secret_key": "...", '
             '"ca_path": "...", "ca_password": "..."}}'
@@ -784,10 +884,10 @@ def sync_fubon_cmd(account_id):
     except ImportError as e:
         console.print(f"[red][ERROR][/red] {e}")
     except FileNotFoundError as e:
+        from portfoliodb.brokers.config import CREDENTIALS_PATH
         console.print(f"[red][ERROR][/red] {e}")
         console.print(
-            "\nCreate credentials file at:\n"
-            "  ~/AppData/Local/PortfolioDB/credentials.json\n"
+            f"\nCreate credentials file at:\n  {CREDENTIALS_PATH}\n"
             "\nFormat:\n"
             '  {"fubon": {"user_id": "...", "password": "...", '
             '"pfx_path": "...", "pfx_password": "..."}}'

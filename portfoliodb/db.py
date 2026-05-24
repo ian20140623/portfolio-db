@@ -1,12 +1,24 @@
 """Database connection management and schema initialization."""
 
+import platform
 import sqlite3
 from pathlib import Path
 from contextlib import contextmanager
 
-# Store DB outside OneDrive to avoid sync corruption
-DB_DIR = Path.home() / "AppData" / "Local" / "PortfolioDB"
-DB_PATH = DB_DIR / "portfolio.db"
+
+def _app_dir() -> Path:
+    """Per-OS app data directory (outside cloud sync to avoid SQLite corruption)."""
+    system = platform.system()
+    if system == "Darwin":
+        return Path.home() / "Library" / "Application Support" / "PortfolioDB"
+    if system == "Windows":
+        return Path.home() / "AppData" / "Local" / "PortfolioDB"
+    return Path.home() / ".local" / "share" / "PortfolioDB"
+
+
+APP_DIR = _app_dir()
+DB_DIR = APP_DIR
+DB_PATH = APP_DIR / "portfolio.db"
 
 SCHEMA_SQL = """
 CREATE TABLE IF NOT EXISTS users (
@@ -16,17 +28,21 @@ CREATE TABLE IF NOT EXISTS users (
     created_at  TEXT    NOT NULL DEFAULT (datetime('now'))
 );
 
+-- legal_owner_id  = 法律名義人（戶頭掛誰名下）
+-- economic_owner_id = 實際擁有人（誰的錢、誰承擔損益）
+-- 兩者通常相同；不同時用於「戶頭借名」情境（e.g. 父親名下實際是兒子的錢）
 CREATE TABLE IF NOT EXISTS accounts (
-    id           INTEGER PRIMARY KEY AUTOINCREMENT,
-    user_id      INTEGER NOT NULL REFERENCES users(id),
-    account_name TEXT    NOT NULL,
-    broker       TEXT    NOT NULL,
-    market       TEXT    NOT NULL,  -- TW, US, SG
-    currency     TEXT    NOT NULL,  -- TWD, USD, SGD
-    account_type TEXT    NOT NULL DEFAULT 'brokerage',
-    is_active    INTEGER NOT NULL DEFAULT 1,
-    created_at   TEXT    NOT NULL DEFAULT (datetime('now')),
-    UNIQUE(user_id, account_name)
+    id                INTEGER PRIMARY KEY AUTOINCREMENT,
+    legal_owner_id    INTEGER NOT NULL REFERENCES users(id),
+    economic_owner_id INTEGER NOT NULL REFERENCES users(id),
+    account_name      TEXT    NOT NULL,
+    broker            TEXT    NOT NULL,
+    market            TEXT    NOT NULL,  -- TW, US, SG
+    currency          TEXT    NOT NULL,  -- TWD, USD, SGD
+    account_type      TEXT    NOT NULL DEFAULT 'brokerage',
+    is_active         INTEGER NOT NULL DEFAULT 1,
+    created_at        TEXT    NOT NULL DEFAULT (datetime('now')),
+    UNIQUE(legal_owner_id, account_name)
 );
 
 CREATE TABLE IF NOT EXISTS holdings (

@@ -24,7 +24,8 @@ class User:
 @dataclass
 class Account:
     id: int
-    user_id: int
+    legal_owner_id: int
+    economic_owner_id: int
     account_name: str
     broker: str
     market: str
@@ -37,7 +38,8 @@ class Account:
     def from_row(cls, row) -> "Account":
         return cls(
             id=row["id"],
-            user_id=row["user_id"],
+            legal_owner_id=row["legal_owner_id"],
+            economic_owner_id=row["economic_owner_id"],
             account_name=row["account_name"],
             broker=row["broker"],
             market=row["market"],

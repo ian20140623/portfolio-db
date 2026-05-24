@@ -28,7 +28,10 @@
       "Bash(git -C \"C:\\\\Users\\\\User\\\\OneDrive\\\\ClaudeProjects\\\\trip-doc-generator\" log --oneline)",
       "Bash(git -C \"C:\\\\Users\\\\User\\\\OneDrive\\\\ClaudeProjects\\\\trip-doc-generator\" add README.md)",
       "Bash(git -C \"C:\\\\Users\\\\User\\\\OneDrive\\\\ClaudeProjects\\\\trip-doc-generator\" commit -m \"$\\(cat <<''EOF''\nAdd README with usage guide in Chinese\n\nCo-Authored-By: Claude Opus 4.6 <noreply@anthropic.com>\nEOF\n\\)\")",
-      "Bash(robocopy:*)"
+      "Bash(robocopy:*)",
+      "Bash(git -C /Users/ianchang/Projects/portfolio-db pull --ff-only)",
+      "Bash(git -C /Users/ianchang/Projects/portfolio-db fetch --tags)",
+      "Bash(git -C /Users/ianchang/Projects/portfolio-db log --oneline -10)"
     ]
   }
 }

@@ -6,13 +6,16 @@ from portfoliodb.utils.constants import MARKETS
 def detect_market(ticker: str) -> str:
     """Detect market from ticker suffix.
 
+    .TW = 上市, .TWO = 上櫃 — both map to TW market (TWD).
+
     Examples:
-        "2330.TW" -> "TW"
-        "AAPL"    -> "US"
-        "D05.SI"  -> "SG"
+        "2330.TW"  -> "TW"
+        "8299.TWO" -> "TW"
+        "AAPL"     -> "US"
+        "D05.SI"   -> "SG"
     """
     ticker = ticker.upper()
-    if ticker.endswith(".TW"):
+    if ticker.endswith(".TW") or ticker.endswith(".TWO"):
         return "TW"
     elif ticker.endswith(".SI"):
         return "SG"

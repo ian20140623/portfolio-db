@@ -4,7 +4,8 @@ Prerequisites:
     1. Download and install fubon_neo .whl from Fubon's API page
        (https://www.fbs.com.tw/TradeAPI/)
     2. Apply for API service and download certificate
-    3. Add credentials to ~/AppData/Local/PortfolioDB/credentials.json:
+    3. Add credentials to the per-OS app-data dir as credentials.json
+       (see portfoliodb.brokers.config.CREDENTIALS_PATH):
        {
            "fubon": {
                "user_id": "YOUR_USER_ID",

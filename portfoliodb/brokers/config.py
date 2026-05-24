@@ -1,30 +1,31 @@
 """Broker API credentials configuration.
 
-Credentials are stored in a JSON file outside OneDrive for security.
-Path: ~/AppData/Local/PortfolioDB/credentials.json
+Credentials live in the per-OS app-data dir (see portfoliodb.db.APP_DIR),
+outside any cloud-sync folder. File: credentials.json.
 
 Example credentials.json:
 {
     "sinopac": {
         "api_key": "YOUR_API_KEY",
         "secret_key": "YOUR_SECRET_KEY",
-        "ca_path": "C:/path/to/Sinopac.pfx",
+        "ca_path": "/path/to/Sinopac.pfx",
         "ca_password": "YOUR_ID_NUMBER",
         "person_id": "YOUR_ID_NUMBER"
     },
     "fubon": {
         "user_id": "YOUR_USER_ID",
         "password": "YOUR_PASSWORD",
-        "pfx_path": "C:/path/to/fubon_cert.pfx",
+        "pfx_path": "/path/to/fubon_cert.pfx",
         "pfx_password": "YOUR_PFX_PASSWORD"
     }
 }
 """
 
 import json
-from pathlib import Path
 
-CREDENTIALS_DIR = Path.home() / "AppData" / "Local" / "PortfolioDB"
+from portfoliodb.db import APP_DIR
+
+CREDENTIALS_DIR = APP_DIR
 CREDENTIALS_PATH = CREDENTIALS_DIR / "credentials.json"
 
 
