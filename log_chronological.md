@@ -85,3 +85,24 @@
 - **新增 `summary breakdown` 指令**：家族資產 8 個維度 aggregation（economic owner / legal owner / type / currency / market / broker / account_type / ticker concentration）+ flat positions 全展開、寬版 console 避免 truncate。`portfolio_service.get_family_breakdown(base_currency)` 為 service-layer entry
 - **實際灌入 8 個 accounts、跨 4 個 broker、跨 3 幣別**：富邦證/富邦銀（dad/ian）+ 永豐證/永豐複委託/永豐銀（dad/dad）+ Firstrade（ian/ian）+ SCB SG ian（ian/ian）+ SCB SG dad（dad/ian）。家族總資產 NT$~371M、4.4% 現金、95.6% 股票、Top 3（2383 台光電 / 8299 群聯 / NVDA）concentration 61%
 - **截圖辨識公式紀律**：永豐 vs 富邦 vs Firstrade vs SCB 各家「庫存總市值」/「損益試算」公式不同（賣出實得含 0.4575% 稅費 vs 毛市值 vs cost-includes-fees vs FIFO）、cross-source 驗證用 yfinance + cnyes 鉅亨網。當帳戶只給「股數+損益」時、反推均價要套對家公式 ^ck-260524-portfolio-db-revive
+
+---
+
+## 2026-05-25（週一）
+
+### 21:23 [MINI] Claude Code memory + PJHub layout + CLAUDE.md pointer
+- **觸發**：跟 Athena 9 輪深度對話後（議題：是否離職管理家族財富、借名 unwind、信託架構、Silent Protector pattern 等）、Sir 要求留 documentation continuity、未來 AI session 不從頭講
+- **內容極度 sensitive**：含家族財富 NT$4 億、借名 NT$123M、太太 information asymmetry、弟弟精神問題、公證遺囑 67/33 等 — 絕對不入 git
+- **layout 演化**（5 次到位、records JV pattern 對 PJHub convention 不夠敏感）：
+  1. `~/.claude/projects/.../memory/` → Sir 嫌 hidden 不好改
+  2. `~/Projects/portfolio-db/memory/` + .gitignore + symlink → 發現被 ks watcher vectorize (config 含 `/Users/ianchang/Projects` recursive *.md)
+  3. `Dropbox/personal_archive/` sibling folder → Sir 提 PJHub
+  4. `PJHub/personal_memory/portfolio-db/` → Sir 指出該是 `PJHub/portfolio-db/...`
+  5. `PJHub/portfolio-db/memory/` ← 對齊 PJHub convention（同 broker-reports / fl-strategy pattern）
+- **Final layout**：
+  - 真實 file：`~/Library/CloudStorage/Dropbox/PJHub/portfolio-db/memory/` — Dropbox 自動跨機器 sync、不在 ks watcher recursive scope、不被向量化
+  - Claude Code symlink：`~/.claude/projects/-Users-ianchang-Projects-portfolio-db/memory` → 上面
+  - 4 個 draft memory file（draft_family_wealth_architecture / draft_family_stakeholder_map / draft_unwind_game_plan / draft_silent_protector_pattern）+ MEMORY.md index
+- **CLAUDE.md 加 pointer**（safe modification、不洩漏 memory content、只寫 path + 用途 + 跨機器 setup 指令）— git tracked、推 GitHub OK
+- **ks vectorization audit**：grep chunks/ 確認 no memory file traces ingested（watcher 沒來得及 process、現在 source 已移走、catch up 後 nothing to index）
+- **Debug pattern reuse**：撞「Resource deadlock avoided」at `mv` step、按 CLAUDE.md errno-first 紀律改用 `cp -a + rm -rf` 取代 mv ^ck-260525-memory-pjhub-layout
