@@ -20,6 +20,17 @@ def create_order(
     ticker = ticker.upper()
     priority = priority.upper()
 
+    # Auto-suffix for TW market accounts (user writes "2330", store "2330.TW")
+    # Sir explicitly write "2330.TWO" if it's an OTC ticker (上櫃).
+    if "." not in ticker:
+        from portfoliodb.services.account_service import get_account
+        try:
+            acc = get_account(account_id)
+            if acc.market == "TW":
+                ticker = f"{ticker}.TW"
+        except Exception:
+            pass  # account_id invalid will be caught downstream by FK constraint
+
     if action not in TRANSACTION_ACTIONS:
         raise ValueError(f"Invalid action '{action}'. Must be BUY or SELL")
     if priority not in ORDER_PRIORITIES:
@@ -125,6 +136,59 @@ def cancel_order(order_id: int) -> PlannedOrder:
             "SELECT * FROM planned_orders WHERE id = ?", (order_id,)
         ).fetchone()
         return PlannedOrder.from_row(row)
+
+
+def review_orders(since_days: int = 180) -> dict:
+    """Retrospective view of planned orders — pure mechanical stats, no scoring.
+
+    Returns 4 stat views (per Athena design doctrine, 2026-05-26):
+      1. counts: total / executed / cancelled / pending by status
+      2. unexecuted_with_outcome: PENDING/CANCELLED orders + current price (did stock move?)
+      3. execution_lag: for EXECUTED orders, days from create to execute
+      4. repeated_tickers: tickers that appear in multiple orders (recurring intent)
+    """
+    from datetime import datetime, timedelta
+    cutoff = (datetime.utcnow() - timedelta(days=since_days)).strftime("%Y-%m-%d %H:%M:%S")
+
+    with get_connection() as conn:
+        rows = conn.execute(
+            "SELECT * FROM planned_orders WHERE created_at >= ? ORDER BY created_at DESC",
+            (cutoff,),
+        ).fetchall()
+
+    orders = [dict(r) for r in rows]
+
+    counts = {"total": len(orders), "PENDING": 0, "EXECUTED": 0, "CANCELLED": 0}
+    for o in orders:
+        counts[o["status"]] = counts.get(o["status"], 0) + 1
+
+    execution_lag_days = []
+    for o in orders:
+        if o["status"] == "EXECUTED" and o["executed_at"]:
+            created = datetime.fromisoformat(o["created_at"].replace(" ", "T"))
+            executed = datetime.fromisoformat(o["executed_at"].replace(" ", "T"))
+            execution_lag_days.append({
+                "order_id": o["id"], "ticker": o["ticker"],
+                "days": (executed - created).total_seconds() / 86400,
+            })
+
+    ticker_counts = {}
+    for o in orders:
+        ticker_counts[o["ticker"]] = ticker_counts.get(o["ticker"], 0) + 1
+    repeated = sorted(
+        [(t, c) for t, c in ticker_counts.items() if c > 1],
+        key=lambda x: -x[1],
+    )
+
+    unexecuted = [o for o in orders if o["status"] in ("PENDING", "CANCELLED")]
+
+    return {
+        "since_days": since_days,
+        "counts": counts,
+        "execution_lag": execution_lag_days,
+        "repeated_tickers": repeated,
+        "unexecuted": unexecuted,
+    }
 
 
 def update_order(order_id: int, **kwargs) -> PlannedOrder:

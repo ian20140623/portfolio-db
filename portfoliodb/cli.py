@@ -418,25 +418,53 @@ def order():
     pass
 
 
-@order.command("add")
+@order.command("add", context_settings={"ignore_unknown_options": True})
 @click.argument("account_id", type=int)
 @click.argument("ticker")
-@click.argument("action", type=click.Choice(["BUY", "SELL"], case_sensitive=False))
-@click.argument("shares", type=float)
+@click.argument("shares", type=str)
 @click.option("--price", "target_price", type=float, default=None, help="Target price")
 @click.option("--reason", default=None, help="Reason for this order")
 @click.option("--priority", default="NORMAL",
               type=click.Choice(["HIGH", "NORMAL", "LOW"], case_sensitive=False))
-def order_add(account_id, ticker, action, shares, target_price, reason, priority):
-    """Create a planned order."""
+def order_add(account_id, ticker, shares, target_price, reason, priority):
+    """Create a planned order. SHARES = signed shorthand (+N buy, -N sell) or 'buy N'/'sell N'.
+
+    Examples:
+      order add 3 2330 +1000 --price 1180 --reason "AI 加碼"
+      order add 1 2383 -1000 --price 5400 --reason "trim"
+      order add 1 2383 sell 1000 --price 5400   (alternative for shells eating leading -)
+    """
     from portfoliodb.services.order_service import create_order
+    import sys
+    s = shares.strip().lower()
+    action = None
+    n = None
+    if s.startswith("+"):
+        action, n = "BUY", float(s[1:])
+    elif s.startswith("-") and len(s) > 1 and s[1].isdigit():
+        action, n = "SELL", float(s[1:])
+    elif s in ("buy", "sell", "b", "s"):
+        # legacy explicit form: "buy 1000" / "sell 500" — next positional is shares
+        # Click consumed shares as the keyword、real shares 在 sys.argv 下一個
+        # 不過 click 沒幫我 capture、要 fallback: read sys.argv directly
+        try:
+            idx = sys.argv.index(shares)
+            n = float(sys.argv[idx + 1])
+            action = "BUY" if s.startswith("b") else "SELL"
+        except (ValueError, IndexError):
+            console.print(f"[red][ERROR][/red] usage: order add <account_id> <ticker> buy|sell <shares>")
+            return
+    else:
+        console.print(f"[red][ERROR][/red] SHARES must be '+1000' (buy), '-500' (sell), or 'buy 1000'/'sell 500'")
+        return
     try:
-        o = create_order(account_id, ticker, action, shares, target_price, reason, priority)
-        price_str = format_currency(o.target_price, "USD") if o.target_price else "market"
+        o = create_order(account_id, ticker, action, n, target_price, reason, priority)
+        price_str = f"@ {o.target_price:,.2f}" if o.target_price else "@ market"
+        sign = "+" if o.action == "BUY" else "-"
         console.print(
             f"[green][OK][/green] Planned order [bold][ID: {o.id}][/bold]: "
-            f"{o.action} {format_shares(o.shares)} shares {o.ticker} @ {price_str} "
-            f"(Priority: {o.priority})"
+            f"{o.ticker} {sign}{format_shares(o.shares)} {price_str} "
+            f"({o.priority}{', ' + o.reason if o.reason else ''})"
         )
     except Exception as e:
         console.print(f"[red][ERROR][/red] {e}")
@@ -508,6 +536,61 @@ def order_cancel(order_id):
         console.print(f"[green][OK][/green] Order #{o.id} cancelled")
     except Exception as e:
         console.print(f"[red][ERROR][/red] {e}")
+
+
+@order.command("review")
+@click.option("--since", "since_days", type=int, default=180,
+              help="Look back N days (default 180)")
+def order_review(since_days):
+    """Retrospective stats — counts, lag, repeated tickers, unexecuted outcomes."""
+    from portfoliodb.services.order_service import review_orders
+    from portfoliodb.services.price_service import fetch_prices
+
+    r = review_orders(since_days=since_days)
+    console.print()
+    console.rule(f"[bold] Order Review — past {r['since_days']} days [/bold]")
+
+    c = r["counts"]
+    console.print(f"\n[bold]Counts[/bold]: total={c['total']}  "
+                  f"PENDING=[yellow]{c['PENDING']}[/yellow]  "
+                  f"EXECUTED=[green]{c['EXECUTED']}[/green]  "
+                  f"CANCELLED=[dim]{c['CANCELLED']}[/dim]")
+
+    if r["execution_lag"]:
+        console.print(f"\n[bold]Execution lag (create → execute)[/bold]")
+        t = Table()
+        t.add_column("Order ID"); t.add_column("Ticker")
+        t.add_column("Days", justify="right")
+        for e in r["execution_lag"]:
+            t.add_row(str(e["order_id"]), e["ticker"], f"{e['days']:.1f}")
+        console.print(t)
+
+    if r["repeated_tickers"]:
+        console.print(f"\n[bold]反覆出現的個股[/bold]（心裡惦記但未必下手）")
+        for ticker, count in r["repeated_tickers"]:
+            console.print(f"  {ticker}: {count} 次")
+
+    if r["unexecuted"]:
+        console.print(f"\n[bold]未執行 plan + 當前股價對照[/bold]")
+        tickers = list({o["ticker"] for o in r["unexecuted"]})
+        prices = fetch_prices(tickers) if tickers else {}
+        t = Table()
+        t.add_column("ID"); t.add_column("Ticker"); t.add_column("Action")
+        t.add_column("Shares", justify="right"); t.add_column("Target", justify="right")
+        t.add_column("現價", justify="right"); t.add_column("Status"); t.add_column("Reason")
+        for o in r["unexecuted"]:
+            cur = prices.get(o["ticker"], {}).get("price")
+            cur_str = f"{cur:.2f}" if cur is not None else "—"
+            target_str = f"{o['target_price']:.2f}" if o["target_price"] else "market"
+            t.add_row(
+                str(o["id"]), o["ticker"], o["action"],
+                f"{o['shares']:,.0f}", target_str, cur_str,
+                f"[dim]{o['status']}[/dim]", o["reason"] or "",
+            )
+        console.print(t)
+
+    if c["total"] == 0:
+        console.print("\n[dim]無 order data 可 review。先用 `order add` 寫幾個 plan、累積 data。[/dim]")
 
 
 # ─── price commands ──────────────────────────────────────────────────
@@ -740,14 +823,22 @@ def summary_breakdown(base_currency):
         "by_account_type":   "帳戶類型",
         "by_ticker":         "個股 concentration",
     }
+    pending_intents = s.get("pending_intents", {})
     for key, label in labels.items():
         t = Table(title=f"by {label}", show_header=True, header_style="bold")
         t.add_column("項目")
         t.add_column(f"{base} 市值", justify="right")
         t.add_column("%", justify="right")
+        # Annotate ticker rows with pending order intent (per Athena ship list 2026-05-26)
+        if key == "by_ticker":
+            t.add_column("intent")
         for k, v in s["aggregations"][key].items():
             pct = v / total * 100 if total else 0
-            t.add_row(str(k), format_currency(v, base), f"{pct:.1f}%")
+            if key == "by_ticker":
+                intent = " / ".join(pending_intents.get(str(k).upper(), [])) or ""
+                t.add_row(str(k), format_currency(v, base), f"{pct:.1f}%", intent)
+            else:
+                t.add_row(str(k), format_currency(v, base), f"{pct:.1f}%")
         console.print(t)
 
     flat = Table(

@@ -197,9 +197,25 @@ def get_family_breakdown(base_currency: str = "TWD") -> dict:
         )),
     }
 
+    # Pending order intents per ticker — used by `summary breakdown` to annotate
+    # individual stock rows with the user's planned next move. Minimal friction:
+    # just a single-line shorthand "→加 500 @1180" or "→減 200".
+    from portfoliodb.db import get_connection
+    pending_intents: dict = {}
+    with get_connection() as conn:
+        for row in conn.execute(
+            "SELECT ticker, action, shares, target_price FROM planned_orders "
+            "WHERE status = 'PENDING' ORDER BY created_at"
+        ):
+            sign = "加" if row["action"] == "BUY" else "減"
+            price_str = f" @{row['target_price']:g}" if row["target_price"] else ""
+            label = f"→{sign} {row['shares']:,.0f}{price_str}"
+            pending_intents.setdefault(row["ticker"].upper(), []).append(label)
+
     return {
         "positions": positions,
         "aggregations": aggregations,
+        "pending_intents": pending_intents,
         "grand_total": grand_total,
         "base_currency": base_currency,
         "fx_rates": fx_rates,

@@ -106,3 +106,23 @@
 - **CLAUDE.md 加 pointer**（safe modification、不洩漏 memory content、只寫 path + 用途 + 跨機器 setup 指令）— git tracked、推 GitHub OK
 - **ks vectorization audit**：grep chunks/ 確認 no memory file traces ingested（watcher 沒來得及 process、現在 source 已移走、catch up 後 nothing to index）
 - **Debug pattern reuse**：撞「Resource deadlock avoided」at `mv` step、按 CLAUDE.md errno-first 紀律改用 `cp -a + rm -rf` 取代 mv ^ck-260525-memory-pjhub-layout
+
+---
+
+## 2026-05-26（週二）
+
+### 14:39 [MINI] order add signed-shares + review retrospective + breakdown intent column + README + design doctrine
+- **觸發**：跟 Athena 9 輪對話討論「加碼/減碼如何 model」、最終 ship list 5 條（同表 annotation / 一行 CLI / retrospective / 不擴 schema / doctrine 寫進文件）
+- **CLI 改動**：
+  - `order add` 改 signed shorthand：`+1000` = BUY、`-1000` = SELL；用 click `ignore_unknown_options` 解 `-1000` 被誤判為 flag 的問題；fallback 保留 `buy 1000` / `sell 500` explicit form（給 shell 吃掉 leading dash 的 edge case）
+  - `order add` ticker auto-suffix：TW market account 內 `2330` 自動變 `2330.TW`（避免 breakdown intent JOIN key mismatch、上櫃要 explicit 寫 `8299.TWO`）
+  - `order review --since N` 新指令：counts（PENDING/EXECUTED/CANCELLED）+ execution lag + 反覆出現的個股 + 未執行 plan + 當前股價對照
+  - `summary breakdown` 個股 concentration table 加 `intent` column：JOIN PENDING orders、annotation 形式 `→加 1000 @1180` / `→減 1000 @5400`、沒 plan 的 cell 空白（zero visual cost）
+- **Service 改動**：
+  - `order_service.review_orders(since_days)`：4 個純機械 SQL stat、不做 LLM / ML / scoring（per Athena friction-minimization doctrine）
+  - `order_service.create_order` 加 TW market ticker auto-suffix logic
+  - `portfolio_service.get_family_breakdown` return 加 `pending_intents` field：dict[ticker → list of intent strings]
+- **Doctrine 寫進 system_map.md**：「Speculative benefit vs concrete cost — 對 speculative benefit + concrete cost、default 不 hedge」— 未來 feature decision 的 filter、避免為 hedge 不確定的 alpha protection 而浪費 concrete time
+- **README.md 新增**：第一次來看 repo 的人 / 未來重 visit 自己的 entry point；含 quickstart 5 行 command 走完 full workflow、tech stack、DB per-OS path、CLI 索引、ticker 規則、設計原則
+- **Athena 9 輪過程的 meta lesson**（不入 git、見 memory）：Sir 第 1 輪直覺「做一起最方便」是對的、Athena framework 兩輪 over-engineered（friction-as-feature → minimax regret）、Sir 用「不需要為摩擦可能的好處浪費生命」拍板 reduce-friction direction。Conversation pattern = 壓力測試已有直覺、不是 think-out-loud find answer
+- **沒改 schema**：planned_orders 既有 `reason TEXT` 一個 free text field 就夠、不擴 conviction_score / why_must / trigger / alternative ^ck-260526-order-signed-shorthand-retrospective
