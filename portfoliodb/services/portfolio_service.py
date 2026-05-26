@@ -200,17 +200,27 @@ def get_family_breakdown(base_currency: str = "TWD") -> dict:
     # Pending order intents per ticker — used by `summary breakdown` to annotate
     # individual stock rows with the user's planned next move. Minimal friction:
     # just a single-line shorthand "→加 500 @1180" or "→減 200".
+    #
+    # JOIN key is the **canonical instrument-layer ticker** so a pending order
+    # written as "2330" (legacy) lines up with the holding row stored as
+    # "2330.TW". ADR vs common share stay distinct: TSM intents never collide
+    # with 2330.TW intents.
     from portfoliodb.db import get_connection
+    from portfoliodb.utils.ticker import canonical_ticker
     pending_intents: dict = {}
     with get_connection() as conn:
         for row in conn.execute(
-            "SELECT ticker, action, shares, target_price FROM planned_orders "
-            "WHERE status = 'PENDING' ORDER BY created_at"
+            "SELECT po.ticker, po.action, po.shares, po.target_price, "
+            "       a.market AS account_market "
+            "FROM planned_orders po "
+            "LEFT JOIN accounts a ON po.account_id = a.id "
+            "WHERE po.status = 'PENDING' ORDER BY po.created_at"
         ):
+            canon, _ = canonical_ticker(row["ticker"], market_hint=row["account_market"])
             sign = "加" if row["action"] == "BUY" else "減"
             price_str = f" @{row['target_price']:g}" if row["target_price"] else ""
             label = f"→{sign} {row['shares']:,.0f}{price_str}"
-            pending_intents.setdefault(row["ticker"].upper(), []).append(label)
+            pending_intents.setdefault(canon, []).append(label)
 
     return {
         "positions": positions,

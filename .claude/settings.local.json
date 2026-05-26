@@ -31,7 +31,8 @@
       "Bash(robocopy:*)",
       "Bash(git -C /Users/ianchang/Projects/portfolio-db pull --ff-only)",
       "Bash(git -C /Users/ianchang/Projects/portfolio-db fetch --tags)",
-      "Bash(git -C /Users/ianchang/Projects/portfolio-db log --oneline -10)"
+      "Bash(git -C /Users/ianchang/Projects/portfolio-db log --oneline -10)",
+      "Bash(awk ' *)"
     ]
   }
 }

@@ -589,6 +589,18 @@ def order_review(since_days):
             )
         console.print(t)
 
+        # Data-quality warnings (e.g. yfinance returned no quote) — surfaced
+        # so a missing price is flagged rather than hidden, but kept out of
+        # the main table so it doesn't disrupt the price-alignment scan.
+        warnings = [
+            (k, v.get("warning"))
+            for k, v in prices.items()
+            if v.get("warning")
+        ]
+        if warnings:
+            joined = "、".join(f"{tk} ({w})" for tk, w in warnings)
+            console.print(f"[dim]Data warnings: {joined}[/dim]")
+
     if c["total"] == 0:
         console.print("\n[dim]無 order data 可 review。先用 `order add` 寫幾個 plan、累積 data。[/dim]")
 

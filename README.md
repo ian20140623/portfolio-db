@@ -72,6 +72,23 @@ sync     sinopac / fubon / firstrade / scb / credentials  券商同步（API + C
 - 美股：純代號 `NVDA / GOOG / TSM`
 - 新加坡：`D05.SI`（DBS）
 
+`order add` 在 TW 帳戶下會自動補 `.TW` 給 2/3 字頭裸數字（如 `2330` → `2330.TW`）；6/8/9 字頭因可能上市可能上櫃、要 explicit 寫 `.TW` 或 `.TWO`。
+
+## Ticker / Issuer 兩層身份
+
+- **Instrument 層**（security）：`2330.TW`、`TSM` 是兩個不同 instrument — ADR 與普通股的市場 / 幣別 / 價格 / 交易單位 / P&L 全不同、order / position / P&L / execution 一律走這層
+- **Company 層**（issuer）：兩者同屬 `TSMC`、僅 issuer aggregation 視圖使用（如未來 `summary breakdown by issuer`）
+- 兩層 schema：`companies` / `instruments` / `company_aliases`、由 `portfoliodb/migrations/m001_canonical_ticker_and_instruments.py` seed
+- 一次性 backfill：`python -m portfoliodb.migrations.m001_canonical_ticker_and_instruments`（dry-run）+ `--apply`、idempotent 可重跑、log 在 `<APP_DIR>/migration_001.log`
+
+## Tests
+
+```
+pytest tests/
+```
+
+`tests/conftest.py` 用 tmp_db fixture 隔離正式 DB、25 tests 覆蓋 canonical / migration / review aggregation / yfinance noise capture。
+
 ## 設計原則
 
 - **Single-machine app**：DB 留 master 機、跨機器讀走 Tailscale / API、不靠 cloud sync DB 檔

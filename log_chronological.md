@@ -111,6 +111,41 @@
 
 ## 2026-05-26（週二）
 
+### 16:10 [MINI] ticker canonical + company / instrument 兩層身份 + migration 001 + 25 tests
+- **觸發**：5/26 早上 `order review` 跑出三條 data quality issue — DB 內 `2330` / `2383` 沒 suffix 跟 `2330.TW` / `2383.TW` 被當不同 ticker、`repeated_tickers` 被拆分淹掉、yfinance 對 raw ticker 噴 HTTP 404 stderr 噪音污染 console。Sir 給 6 階段任務 brief、要求採 A + B + ticker identity 改成 company / instrument 兩層
+- **核心原則**：TSM 與 2330.TW 同公司 TSMC（issuer-layer）、但不同 instrument（ADR vs 普通股、市場 / 幣別 / 價格 / 交易單位 / P&L 全不同）。**order / position / price / P&L / execution 層不可合併**、只有 `summary breakdown by issuer`（未來功能）才可走 company-layer
+- **設計選擇**：mapping table + canonical helper、不重寫 5 個 ticker column 的 schema 結構（per Sir「最小安全修正、不大型 FK refactor」）
+- **Schema 新增**（idempotent `CREATE TABLE IF NOT EXISTS`）：
+  - `companies (company_id PK, display_name, notes)` — issuer 層
+  - `instruments (instrument_id PK, ticker UNIQUE, market, currency, company_id NULLABLE FK, security_type, notes)` — security 層、`ticker` 是 canonical key
+  - `company_aliases (alias, company_id FK, kind, UNIQUE(alias, company_id))` — 別名、**僅 issuer aggregation 用、絕不當 instrument identity**
+- **`portfoliodb/utils/ticker.py` 加 `canonical_ticker(raw, market_hint) → (canonical, unresolved_reason)`** — **唯一** normalization 來源、所有 write 入口應 route 經此（本次 wire 到 `order_service.create_order`、其他 service 留 future patch）
+- **`canonical_ticker` 規則**：已有 `.TW`/`.TWO`/`.SI` suffix 不動；TW + 2/3 字頭裸數字 → +.TW；6/8/9 字頭裸數字 → unresolved（不猜上市 vs 上櫃、要 Sir 手動寫 suffix）；字母 ticker → 視為 US 不動
+- **Migration `m001_canonical_ticker_and_instruments.py`**：dry-run + apply + log 到 `<APP_DIR>/migration_001.log`、idempotent 可重跑、第二次 apply 0 update
+  - Backfill 結果：planned_orders ID 1 `2330` → `2330.TW`、ID 2 `2383` → `2383.TW`、holdings / transactions / price_cache 全 canonical 不動
+  - Seed TSMC company + `TSMC_TW_COMMON` (2330.TW) + `TSMC_US_ADR` (TSM) + 4 aliases（台積電 / Taiwan Semiconductor / TSMC etc.）
+  - 9 條 provisional instruments（NVDA / GOOG / 2337.TW / 2486.TW / 3481.TW / 3702.TW / 8021.TW / 8299.TWO / 2383.TW、instrument_id == ticker、company_id NULL）— notes 標 `"provisional"` 避免誤認
+- **`review_orders` + `get_family_breakdown.pending_intents` 都走 canonical** — SQL JOIN 帶 `account.market` 當 hint、舊資料 runtime safety net
+- **yfinance noise capture** — `fetch_prices` 用 `contextlib.redirect_stderr` 包 `yf.Ticker.fast_info`、known no-quote patterns（404 / "possibly delisted" / "Quote not found"）吞掉、未知 stderr replay、CLI 顯示 `[dim]Data warnings: ...[/dim]` 區塊不污染主 output
+- **25 tests pass**（pytest 9.0.3、3.12s）— 覆蓋 Sir 列的 8 個 case + migration idempotency + alias 不可當 instrument key + 未知 stderr 不被吞、新增 `tests/conftest.py` tmp_db fixture 隔離正式 DB
+- **不動**：models.py / accounts / holdings / transactions / cash_positions schema、4 broker、2 importer、holding_service / transaction_service / sync_service 主要 logic — 維持「最小修正、不擴大 scope」
+- **未來可升級成完整 instrument master**：9 條 provisional 待 link company、`holding_service` / `transaction_service` 還沒 wire canonical_ticker、6/8/9 字頭 TW 數字 ticker 可接 TWSE / TPEx 公開資料源做精確判斷、`summary breakdown by issuer` 視圖
+- **DB backup**：`portfolio.db.backup-20260526-160234`（migration apply 前 snapshot）
+
+### 16:20 [MINI] 今日三筆 TW 成交入帳 + acct 3 永豐 cash 對齊 broker app
+- **觸發**：Sir ship 永豐證券當日成交回報截圖、3 筆 TW 成交、總預估付 −NT$4,212,337
+- **成交內容**：
+  - 09:43:00 X0DQC **賣 2383 台光電 1,000 股 @ 5,280** — 實得 NT$5,256,636（扣 7,524 手續費 + 15,840 證交稅 0.3%）
+  - 09:53:42 X0G0A **買 2472 立隆電 17,000 股 @ 296** — 實付 NT$5,039,170（含 7,170 手續費）— 新標的、之前 DB 沒這支
+  - 09:19:49 X09O2 **買 3481 群創 90,000 股 @ 49.15** — 實付 NT$4,429,803（含 6,303 手續費）— 5/24 vision 灌資料時已預先記到 holdings、本次跳過避免 double-count
+- **動作**：
+  - `tx sell 3 2383.TW 1000 5280 --fee 7524 --tax 15840 --note "X0DQC 永豐 09:43"` — acct 3 永豐 2383 持股 10,000 → 9,000、avg_cost 1228.24 不變
+  - `tx buy 3 2472.TW 17000 296 --fee 7170 --note "X0G0A 永豐 09:53"` — 新增 17,000 股 @ 296
+  - 3481 群創 skip
+- **Cash 對齊**：Sir 再 ship 兩張截圖（永豐銀行餘額 NT$4,754,075 @ 5/26 18:10、交割訊息 5/28 應付 −4,212,337 確認 T+2 schedule）。acct 3 之前無 TWD cash position record、執行 `cash set 3 TWD 4754075` 直接對齊 broker app current view
+- **帳戶總值驗證**（`summary account 3`）：持股市值 NT$196,238,500 + 現金 NT$4,754,075 = **NT$200,992,575**、跟 broker app 「庫存試算 + 銀行餘額」一致（未交割前 view）
+- **5/28 reconcile reminder**：交割日 broker 銀行帳會實扣 4,212,337、剩 541,738。那天 Sir 再給 broker 銀行餘額截圖、`cash set 3 TWD <新數字>` 重對齊。3481 那筆 cash flow（−4,429,803）DB 沒記、5/28 broker 結算後 DB 用 set 蓋過去即可 ^ck-260526-tx-canonical-cash-reconcile
+
 ### 14:39 [MINI] order add signed-shares + review retrospective + breakdown intent column + README + design doctrine
 - **觸發**：跟 Athena 9 輪對話討論「加碼/減碼如何 model」、最終 ship list 5 條（同表 annotation / 一行 CLI / retrospective / 不擴 schema / doctrine 寫進文件）
 - **CLI 改動**：

@@ -123,6 +123,38 @@ CREATE TABLE IF NOT EXISTS price_cache (
     currency   TEXT    NOT NULL,
     fetched_at TEXT    NOT NULL DEFAULT (datetime('now'))
 );
+
+-- Two-layer ticker identity (since 2026-05-26):
+--   companies  = issuer layer (e.g. TSMC). Used for issuer aggregation only.
+--   instruments= security layer (e.g. TSMC_TW_COMMON vs TSMC_US_ADR). The
+--                `ticker` column is the canonical instrument key joined into
+--                holdings/transactions/planned_orders/price_cache.
+-- ADR and the underlying common share share company_id but are distinct
+-- instruments: different market, currency, price, trading unit and P&L.
+CREATE TABLE IF NOT EXISTS companies (
+    company_id    TEXT PRIMARY KEY,
+    display_name  TEXT NOT NULL,
+    notes         TEXT
+);
+
+CREATE TABLE IF NOT EXISTS instruments (
+    instrument_id TEXT PRIMARY KEY,
+    ticker        TEXT NOT NULL UNIQUE,
+    market        TEXT NOT NULL,
+    currency      TEXT NOT NULL,
+    company_id    TEXT,
+    security_type TEXT,
+    notes         TEXT,
+    FOREIGN KEY (company_id) REFERENCES companies(company_id)
+);
+
+CREATE TABLE IF NOT EXISTS company_aliases (
+    alias       TEXT NOT NULL,
+    company_id  TEXT NOT NULL,
+    kind        TEXT,
+    UNIQUE(alias, company_id),
+    FOREIGN KEY (company_id) REFERENCES companies(company_id)
+);
 """
 
 

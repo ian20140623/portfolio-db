@@ -4,6 +4,7 @@ from portfoliodb.db import get_connection
 from portfoliodb.models import PlannedOrder
 from portfoliodb.services.transaction_service import record_transaction
 from portfoliodb.utils.constants import TRANSACTION_ACTIONS, ORDER_PRIORITIES, ORDER_STATUSES
+from portfoliodb.utils.ticker import canonical_ticker
 
 
 def create_order(
@@ -17,19 +18,24 @@ def create_order(
 ) -> PlannedOrder:
     """Create a new planned order."""
     action = action.upper()
-    ticker = ticker.upper()
     priority = priority.upper()
 
-    # Auto-suffix for TW market accounts (user writes "2330", store "2330.TW")
-    # Sir explicitly write "2330.TWO" if it's an OTC ticker (上櫃).
-    if "." not in ticker:
-        from portfoliodb.services.account_service import get_account
-        try:
-            acc = get_account(account_id)
-            if acc.market == "TW":
-                ticker = f"{ticker}.TW"
-        except Exception:
-            pass  # account_id invalid will be caught downstream by FK constraint
+    # Single source of truth for ticker normalisation: canonical_ticker().
+    # Use the owning account's market as the hint so "2330" written under a
+    # TW account becomes "2330.TW"; ambiguous cases (8/6/9 digit prefix) come
+    # back unresolved and Sir is expected to write the suffix explicitly.
+    from portfoliodb.services.account_service import get_account
+    market_hint = None
+    try:
+        market_hint = get_account(account_id).market
+    except Exception:
+        pass  # account_id invalid is caught downstream by FK constraint
+    ticker, unresolved = canonical_ticker(ticker, market_hint=market_hint)
+    if unresolved:
+        raise ValueError(
+            f"Cannot canonicalise ticker '{ticker}': {unresolved}. "
+            "Please write the suffix explicitly (e.g. 2330.TW or 8299.TWO)."
+        )
 
     if action not in TRANSACTION_ACTIONS:
         raise ValueError(f"Invalid action '{action}'. Must be BUY or SELL")
@@ -146,17 +152,31 @@ def review_orders(since_days: int = 180) -> dict:
       2. unexecuted_with_outcome: PENDING/CANCELLED orders + current price (did stock move?)
       3. execution_lag: for EXECUTED orders, days from create to execute
       4. repeated_tickers: tickers that appear in multiple orders (recurring intent)
+
+    All ticker comparison is done on the **canonical instrument-layer key**
+    via `canonical_ticker()` — pre-2026-05-26 rows where the suffix is
+    missing get normalised at read time so they aggregate alongside their
+    suffixed counterparts. Migration 001 backfills the stored column, so on
+    a migrated DB the runtime normalisation is a no-op safety net.
     """
     from datetime import datetime, timedelta
     cutoff = (datetime.utcnow() - timedelta(days=since_days)).strftime("%Y-%m-%d %H:%M:%S")
 
     with get_connection() as conn:
         rows = conn.execute(
-            "SELECT * FROM planned_orders WHERE created_at >= ? ORDER BY created_at DESC",
+            "SELECT po.*, a.market AS account_market "
+            "FROM planned_orders po "
+            "LEFT JOIN accounts a ON po.account_id = a.id "
+            "WHERE po.created_at >= ? ORDER BY po.created_at DESC",
             (cutoff,),
         ).fetchall()
 
-    orders = [dict(r) for r in rows]
+    orders = []
+    for r in rows:
+        o = dict(r)
+        canon, _ = canonical_ticker(o["ticker"], market_hint=o.get("account_market"))
+        o["ticker"] = canon  # canonical for both presentation and aggregation
+        orders.append(o)
 
     counts = {"total": len(orders), "PENDING": 0, "EXECUTED": 0, "CANCELLED": 0}
     for o in orders:
@@ -172,7 +192,7 @@ def review_orders(since_days: int = 180) -> dict:
                 "days": (executed - created).total_seconds() / 86400,
             })
 
-    ticker_counts = {}
+    ticker_counts: dict[str, int] = {}
     for o in orders:
         ticker_counts[o["ticker"]] = ticker_counts.get(o["ticker"], 0) + 1
     repeated = sorted(

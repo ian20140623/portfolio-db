@@ -1,5 +1,5 @@
 # 帳務管理系統 — 功能說明
-*last updated: 2026-05-24*
+*last updated: 2026-05-26*
 
 > **給未來 AI 的說明**
 > 共用指引見 [`../shared/LOG_GUIDE.md`](../shared/LOG_GUIDE.md)
@@ -49,9 +49,9 @@ DB / credentials 走 per-OS app-data dir（`db.APP_DIR`）、跨平台分流、*
 ---
 
 ## 資料庫結構
-*last updated: 2026-05-24*
+*last updated: 2026-05-26*
 
-9 張資料表：
+12 張資料表：
 
 | 資料表 | 用途 |
 |--------|------|
@@ -64,9 +64,18 @@ DB / credentials 走 per-OS app-data dir（`db.APP_DIR`）、跨平台分流、*
 | `planned_orders` | 計畫下單（PENDING → EXECUTED / CANCELLED） |
 | `exchange_rates` | 匯率快取（1 小時 TTL） |
 | `price_cache` | 股價快取（15 分鐘 TTL） |
+| `companies` | **Issuer 層**（company_id PK e.g. "TSMC"、display_name、notes）|
+| `instruments` | **Security 層**（instrument_id PK、ticker UNIQUE canonical key、market、currency、company_id nullable FK、security_type COMMON/ADR/ETF）|
+| `company_aliases` | Issuer 別名（alias、company_id FK、kind name_zh/name_en/abbr）|
 
 關鍵設計：
 - **兩層所有權**：`accounts.legal_owner_id`（戶頭掛誰名下）+ `accounts.economic_owner_id`（錢實際是誰的）。「戶頭借名」場景必備 — 例如父親名下實際是兒子的資產
+- **兩層 ticker identity**（2026-05-26 加入）：
+  - **Instrument 層**（security）= `instruments.ticker` canonical key、order / position / price / P&L / execution 走這層。ADR 與普通股保持獨立（如 `TSMC_TW_COMMON` ticker=2330.TW vs `TSMC_US_ADR` ticker=TSM）
+  - **Company 層**（issuer）= `instruments.company_id` 同一個、僅 `summary breakdown by issuer` 類 aggregation 使用
+  - `holdings` / `transactions` / `planned_orders` / `price_cache` 的 `ticker` column 維持 TEXT、不改 FK、用 canonical 字串 JOIN
+  - 唯一 normalization 來源：`portfoliodb/utils/ticker.py:canonical_ticker(raw, market_hint)` — 已有 suffix 不動、TW + 2/3 字頭裸數字補 .TW、6/8/9 字頭裸數字標 unresolved（不猜上市/上櫃）
+  - Migration 001（`portfoliodb/migrations/m001_canonical_ticker_and_instruments.py`）支援 dry-run + apply + idempotent、audit trail 到 `<APP_DIR>/migration_001.log`
 - 交易紀錄採 **雙重記帳**：一筆 BUY 同時更新持股（shares 增加、均價重算）和現金（扣款）
 - 均價計算採 **加權平均成本法**
 - 計畫下單執行後自動連結到實際交易紀錄（`linked_transaction_id`）
@@ -75,7 +84,7 @@ DB / credentials 走 per-OS app-data dir（`db.APP_DIR`）、跨平台分流、*
 ---
 
 ## 程式碼結構
-*last updated: 2026-02-23*
+*last updated: 2026-05-26*
 
 ```
 portfoliodb/
@@ -90,10 +99,10 @@ portfoliodb/
     holding_service.py       ← 持股管理（均價計算）
     transaction_service.py   ← 交易紀錄（雙重記帳核心）
     cash_service.py          ← 現金部位管理
-    order_service.py         ← 計畫下單
-    price_service.py         ← Yahoo Finance 報價 + 快取
+    order_service.py         ← 計畫下單 + review_orders 回顧
+    price_service.py         ← Yahoo Finance 報價 + 快取 + stderr noise capture
     fx_service.py            ← 匯率抓取與換算
-    portfolio_service.py     ← 彙總摘要與損益計算
+    portfolio_service.py     ← 彙總摘要與損益計算 + family breakdown
     sync_service.py          ← 券商同步與 CSV 匯入的協調層
 
   brokers/
@@ -105,10 +114,22 @@ portfoliodb/
     firstrade_csv.py         ← Firstrade CSV 解析器
     scb_csv.py               ← 渣打新加坡 CSV 解析器
 
+  migrations/                ← 一次性 DB 升級腳本（dry-run + apply + idempotent）
+    m001_canonical_ticker_and_instruments.py
+                             ← canonical ticker backfill + companies / instruments / aliases seed
+
   utils/
     constants.py             ← 市場、幣別、稅率定義
-    ticker.py                ← 股票代碼驗證與市場偵測
+    ticker.py                ← canonical_ticker / detect_market / resolve_instrument / resolve_company
+                              （**單一 normalization 來源**）
     formatting.py            ← 金額、損益、百分比格式化
+
+tests/                       ← pytest（tmp_db fixture 隔離正式 DB）
+  conftest.py
+  test_ticker_canonical.py   ← 11 test、canonical_ticker 規則
+  test_migration_001.py      ← 8 test、backfill + idempotent + identity
+  test_review_orders.py      ← 3 test、canonical aggregation + ADR/普通股不合併
+  test_price_warnings.py     ← 3 test、yfinance noise capture
 ``` ^ck-c47767-10
 
 ---
