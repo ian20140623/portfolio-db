@@ -109,6 +109,25 @@
 
 ---
 
+## 2026-05-27（週三）
+
+### 11:00 [MINI] Portfolio construction framework V1（scratch）+ Layer 0 unwind reframe + 產業分桶 worksheet 啟動
+- **觸發**：5/26 三筆 TW 成交入帳後、Sir 從 row-by-row 部位調整跳到 portfolio construction methodology 層級。問題從「2383 富邦減 1,000 股嗎」變「我只有 100%、想用 PEG + Kelly 綜合 + 加新標的、怎麼系統化分配」
+- **Framework V1**（寫在 `scratch/20260527-投組初步想法.md`、Sir 親自撰寫）：
+  - **15 分模型**（掌握度 + 估值吸引力 + 長期品質）、每維度 1-5 分、信用評等式絕對標準（非 sample 內相對排名）
+  - **兩層配置**：大族群分數 → 額度 → 族群內個股分數 → 個股比重、擋「同類股越找越多、主題自動變大」的假分散
+  - **族群不切太細**（同核心假設 = 同桶）+ **共同風險檢查**（6 維度：需求 / 客戶 / 景氣 / 估值因子 / 政策 / 籌碼）
+  - **轉機股獨立 frame**（用 normalised EPS / FCF / ROE 不用 PEG）+ **探索股獨立 frame**（單檔 ≤ 3%、同主題 5/10/15% escalation ladder + 升級 / 淘汰條件事前寫）
+  - **Kelly 降級成警報器**：不當主工具（estimation noise 對 Full Kelly 過敏感）、用來反向壓力測試「現在這個部位是否需要過度樂觀假設才合理」
+- **Layer 0 reframe — Sir 後續補的關鍵**：在 V1 之前加「現金 2% / 台股 59% / 美股 39%」top-down 分配、**美股 39% ≈ Sir eco 比重 39.4%**。framework intent 不是純資產配置、是 **借名 unwind 路徑** — Sir eco 部分逐步遷到美股（自己 legal 持有）、爸 eco 部分留台股 + cash。跟 PJHub memory `draft_unwind_game_plan` 的 Type B substance unwind + Silent Protector pattern 高度對齊
+- **TSMC 算美股**：對應 5/26 ship 的 instrument-layer ticker identity — portfolio 配置走 instrument（TSM 算美股 / 2330.TW 算台股 分開）、issuer 級 TSMC 整體曝險走第六節「共同風險檢查」處理
+- **我 critique 浮上 5 個 critical gap**（framework V1 未補）：(1) 分數 → 比重 mapping 仍 judgment call、未量化 (2) 大族群額度公式空白（14 分族群配多少 %）(3) Kelly 警報 trigger 條件未定 (4) rebalancing 時間維度缺失（多久 review、什麼條件動）(5) 轉機 → 一般股升級 transition rule 未寫
+- **產業分桶 worksheet 啟動**（`scratch/20260527_industry_buckets_candidates.md`）：列 15 個候選大族群 + 現有 12 檔初步分桶（4 檔屬性不確定：旺宏 / 一詮 / 立隆電 / 群創）+ 10 row 空白給 Sir 填潛在標的。Sir 填完我跑 yfinance 抓 PE / forward growth、算每桶 PEG median 當錨點、Sir 用「個股 PEG vs 產業 PEG」判估值吸引力 1-5 分
+- **honest 對比**（修正後、target − 現有 convention）：cash 4.1% vs target 2% (−2.1%、5/28 永豐扣 4.2M 後自然到位)、台股 73.7% vs target 59% (−14.7%、削 ~60M)、美股 22.2% vs target 39% (+16.8%、加 ~69M)。主軸 ~NT$60-70M TW → US rotate、但跨法律名義人 / 幣別 / 國別、要走 unwind plan 4-phase 不是純買賣
+- **outstanding**：5/28（明天）永豐交割扣 −4,212,337、Sir ship 銀行餘額截圖後 `cash set 3 TWD <新數字>` 重對齊。3481 群創 cash flow 沒在 DB（−4,429,803）、5/28 結算後 broker 與 DB 差此額、用 5/28 set 蓋過去即可 ^ck-260527-framework-v1-layer0-unwind
+
+---
+
 ## 2026-05-26（週二）
 
 ### 16:10 [MINI] ticker canonical + company / instrument 兩層身份 + migration 001 + 25 tests
