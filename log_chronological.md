@@ -111,6 +111,34 @@
 
 ## 2026-05-27（週三）
 
+### 15:30 [MINI] Athena 對話建 V1 第十二節（時間紀律 / 換手規則）+ Lynch two-strikes 紀律 + 產業 PEG 抓全 27 → 25 ticker
+- **觸發**：跟 Athena 3 輪對話、起點 Sir 問「top-down allocation 準度不高、bottom-up 微調太煩」
+- **Athena round 1**：Sir 直覺「top-down 不準」對、但 Layer 0「美股 39%」本來就不是市場預測、是借名 unwind invariant 物理外顯、不依賴市場準度。Sir「煩」實際上是 V1 critical gap — 沒寫「時間維度」、把估值 / 掌握度 / 長期品質三類半衰期不同的輸入用同 cadence 追蹤
+- **Athena round 2**：Sir 續問「想加新標的、水位高、要降誰」、Athena reframe 為「不是『誰讓位』、是『X 是否強過排尾』」+ 拆兩個正交問題（A. X 值不值得進、B. 頂掉誰 = conviction 最低）+ cash 不是 baseline、最弱舊持股才是
+- **Sir push back**：Athena 用「順不順眼 / 找祭旗對象」措辭、Sir 不領情、強調 V1 15 分模型本身就是 conviction × valuation × moat 三維系統化排序方法論、不是憑感覺
+- **Athena round 3**：認錯「順不順眼」措辭、但守住核心 — V1 第三節「分數主要負責排序、不直接等於投資比重」這句 Sir 自己寫的已暗示 translation 有空間 + 時間兩維、V1 把空間維度展開（兩層配置 + 共同風險 + 風險調整）、時間維度沒展開（換手規則）。提議寫成 V1 第十二節、避免 framework fork drift
+- **V1 第十二節初稿**（`scratch/20260527_v1_section12_draft.md`、5 個子節）：
+  - **1. 三類輸入更新節奏** — Sir 拍板：估值 = realtime / on-demand pull、掌握度 + 長期品質 = 不定期 event-driven、無定期 trigger（reject Athena 提的 fixed cadence、保留 event-driven）
+  - **2. 換手 threshold 分級**（Sir 拍板）：gap ≥ 1 分建議換手、gap ≥ 3 分強烈建議、gap < 1 不動。對齊 V1 第三節階梯式風格（12-13 中高 / 14-15 高信心）。3 分跨度 = 跨一個信心區間
+  - **3. 新標的觸發 re-score** — X 浮現本身就是 event-driven trigger、re-score 同桶 / 同主題 / 同共同風險舊持股、吸收 opportunity cost re-pricing signal（absolute scale 對機會成本變化遲鈍的補救）
+  - **4. 升級 / 淘汰 transition rule**：轉機股 → 一般股升級 N 季可持續性 5 分（parameter 未填）、探索股 → 一般股升級條件對齊第八節、一般股 → 降級 / 出場 N 季 thesis 證偽（parameter 未填）
+  - **5. Sir surface tension**：「成長股最好做法是抱緊、可是這樣沒辦法買新股」+「曾經短期漲多就賣、後來少賺一大段」+「拉開 PEG 分數會更容易因股價賣出」 — 引 Peter Lynch *One Up on Wall Street* multi-bagger / cutting flowers 紀律
+- **提議 12.5 Two-Strikes 紀律**（待 Sir 拍板）：
+  - **估值單獨惡化 ≠ 賣**、必須 (估值 ↓) AND (掌握度 OR 長期品質 ↓) 才走第 2 條換手 threshold
+  - 估值單獨惡化只 trigger trim（部分減碼）、不 trigger switch（整檔換出）
+  - 對應 Lynch 紀律 — 純估值貴不賣、fundamentals 變壞才賣（避免 cutting flowers / watering weeds）
+  - 不需先定義「核心持股」、universal 規則套所有持股、sidestep motivated reasoning（Athena 可能挑的點）
+  - 同時解開「拉開 PEG 分數區辨力」vs「過動換手」兩個 design tension
+- **產業分桶 + PEG 抓取（早上 / 中午先跑完）**：
+  - 候選大族群清單從 15 縮 9（per Sir「不用全部產業」、轉機 / 探索改回 attribute 不獨佔大族群）
+  - 樣本範圍 27 → 25（per Sir 「LGD 034220.KS / 5425 台半 移除、vault 無 data 且非核心 universe」）
+  - PEG 抓取 3 層 fallback：yfinance pegRatio → vault frontmatter eps_2026 → vault recursive deep dig（含 `_company/` 自家整理）。最終 25 ticker 全有 source（vault frontmatter 13 / vault body-only 2 / yfinance only 10）
+  - yfinance `earningsGrowth` 不可信（過去 YoY TTM、被低基期反彈 dilute）、自己算 PEG 失真。yfinance 自己的 `pegRatio` 較對（用 forward forecast、但仍有 outlier 如南電 11.28）
+  - vault deep dig 發現 broker_reports pipeline 對 13/15 ticker 抽到 `target_price + broker_name + rating` 進 frontmatter、但 `eps_2026` 只 2 檔（2383 + 8021）。其他要看 body 內文 EPS table 或 `_analysis/<公司>_法說會_<日期>.md` 自家整理（含「平均 EPS / 目標價區間」消化過數字）
+  - Sir 自家 `_analysis/` 比 broker report 更精煉 — 群聯 8299 整理：4 家券商 2026E EPS 估值 75-220 元、分歧近 3 倍、凱基估 2027E EPS 年減 55%
+- **doctrine 點**：framework V1 的本質是 living ranking、不是 static collection。新標的浮現 = trigger re-score、不是 just 評 X。Sir 21 年直覺對齊 quality-led long-hold + Lynch two-strikes、framework 該明寫這個 priority 順序：長期品質 > 掌握度 > 估值
+- **outstanding**：12.5 Two-strikes 待拍板、2 個 parameter 待填（轉機升級 N 季 / 淘汰 N 季）、產業 PEG 算術平均 + 個股 vs 桶比較表還沒整成 Sir-friendly 單一 worksheet ^ck-260527-v1-section12-athena-lynch
+
 ### 11:00 [MINI] Portfolio construction framework V1（scratch）+ Layer 0 unwind reframe + 產業分桶 worksheet 啟動
 - **觸發**：5/26 三筆 TW 成交入帳後、Sir 從 row-by-row 部位調整跳到 portfolio construction methodology 層級。問題從「2383 富邦減 1,000 股嗎」變「我只有 100%、想用 PEG + Kelly 綜合 + 加新標的、怎麼系統化分配」
 - **Framework V1**（寫在 `scratch/20260527-投組初步想法.md`、Sir 親自撰寫）：
