@@ -111,6 +111,31 @@
 
 ## 2026-05-27（週三）
 
+---
+
+## 2026-05-29（週五）
+
+### 17:00 [MINI] V1 第十二節 final（4 子節）+ append 進主檔、framework 12 節完整
+- **觸發**：5/27 Athena 對話 + 5/28 ~ 5/29 framework iteration 後、Sir 拍板 4 個 design decision、第十二節 finalize 並 append 進 `20260527-投組初步想法.md` 主檔
+- **拍板的 4 個 framework decision**（從複雜走回簡單、對齊 Sir「畢竟只是建議」哲學）：
+  - **priority 順序不寫**：我推論的「長期品質 > 掌握度 > 估值」是從 Sir 對話 inferring、不是 Sir 明寫。Sir 不認可寫進 framework — V1 第一節原本「三維等權重加總 15 分」就足夠、加 priority 層會跟信用評等式精神打架
+  - **12.5 Two-strikes 紀律不寫**：D（V1 第一節 15 分加總）+ 第三節階梯式（12-13 中高 / 14-15 高信心）已**隱含** Lynch cutting flowers 紀律。例如：估值 5→2 但其他維度不動、總分仍 12 分 = 中高比重、不會自然 trigger sell。emergent property、不需要 explicit 寫 two-strikes
+  - **12.4 升級 / 淘汰 transition rule 整個拿掉**：升級 / 淘汰 implicit 走 D（15 分加總）+ 12.2（換手 threshold）、不另立 mechanical rule（連續 N 季 parameter 也不寫）。轉機升級 = 重評 15 分 + 走 12.2、淘汰 = 分數退低 + 走 12.2
+  - **estimation realtime / 其他 event-driven**：估值要 portfolio decision 時 pull、掌握度 + 長期品質 事件觸發、無定期 trigger（reject Athena 提的 fixed cadence）
+- **第十二節 final 結構**（4 子節、簡潔對齊 V1 前 11 節風格）：
+  - 12.1 三類輸入更新節奏（estimation realtime / 其他 event-driven）
+  - 12.2 換手 threshold 分級（gap ≥ 1 建議 / ≥ 3 強烈建議 / < 1 不動、grey zone 不動要寫理由防 narrative drift）
+  - 12.3 新標的觸發 re-score（同桶 / 同主題 / 同共同風險、吸收 opportunity cost re-pricing）
+  - 12.4 一句話濃縮
+- **append 進主檔**：`scratch/20260527-投組初步想法.md` 在第十一節「最終一句話版本」後加第十二節、framework 12 節完整
+- **doctrine 收斂**：framework 從「多層 priority + Two-strikes + N 季 parameter + sub rules」收斂到「D 等權重 + 12.2 換手 threshold + 第三節階梯」三件事。Sir 的判斷：framework 給 ranking signal、不替 Sir 強制執行、過度規則化反而會違反「分數負責排序、不直接等於投資比重」的 V1 第三節原意
+- **Athena 第三方視角 net contribution**：surface「時間紀律 vs 空間紀律」對立 + 「新 idea = trigger re-score 不是手續」reframe + 「分數 → 比重 translation 有兩維」精確診斷、撐住 framework 整體 coherence。但具體規則內容由 Sir 21 年 buy-side 直覺拍板、Athena 不替 Sir 下結論（對齊 Athena spawn skill 的 niche）
+- **outstanding**：產業 PEG 25 ticker + 桶平均 + 個股 vs 桶 比較表 → Sir-friendly 單一 worksheet（含掌握度 / 估值 / 護城河 三 column 給 Sir 填）。Framework 完成後、實際填表是下一個 hop ^ck-260529-v1-section12-final
+
+---
+
+## 2026-05-27（週三、接續）
+
 ### 15:30 [MINI] Athena 對話建 V1 第十二節（時間紀律 / 換手規則）+ Lynch two-strikes 紀律 + 產業 PEG 抓全 27 → 25 ticker
 - **觸發**：跟 Athena 3 輪對話、起點 Sir 問「top-down allocation 準度不高、bottom-up 微調太煩」
 - **Athena round 1**：Sir 直覺「top-down 不準」對、但 Layer 0「美股 39%」本來就不是市場預測、是借名 unwind invariant 物理外顯、不依賴市場準度。Sir「煩」實際上是 V1 critical gap — 沒寫「時間維度」、把估值 / 掌握度 / 長期品質三類半衰期不同的輸入用同 cadence 追蹤
