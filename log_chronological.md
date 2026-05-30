@@ -113,7 +113,23 @@
 
 ---
 
-## 2026-05-29（週五）
+## 2026-05-30（週六）
+
+### 16:00 [MINI] 家族治理 framework v0.2 → v0.3（doctrine + GPT deep research mechanism integration）
+- **觸發**：portfolio-db V1 是 Sir 自己 active 階段工具、但跨上一層「家族治理」doctrine 一直在 PJHub memory 4 drafts（internal sensitive context）+ scratch 沒結構化的對話。今天 Sir ship 家族 v0.2 doctrine + GPT deep research 進到 scratch、要整合 v0.3
+- **v0.2 framework（Sir 寫）**：10 章 + 收尾句、family governance doctrine 公開層 — 一/二/三 核心使命 + 哲學 + 兩層資本架構（個人自由基金 ~$10M/人 + 家族資本池）、四 治理（所有權 / 管理權分離）、五 退出機制（4 方案 + 冷靜期）、六 投資哲學（passive ETF for 後代）、七 跨國韌性、八 制度進化、九 未來擴張、十 待研究、核心句「家族資本目的不是讓下一代繼續管理我的人生、而是讓下一代有能力選擇自己的人生」
+- **我的 v0.2 first-pass review**（vision 層 solid、結構層對但缺 mechanism、execution 層誠實但 7 個 missing layer）
+- **GPT deep research（5/30）**：industry anchor 補 v0.2 缺的 binding layer mechanism。關鍵 anchor：SFO 經濟門檻 $100M（$10M 不該做 full SFO、做「微型家辦」即可）、PwC 2026 SFO 結構成本 80.7 bps、US$60,000 estate tax 門檻（Sir 直接持 NVDA / GOOG / TSM / MSFT 已遠超、是真實風險）、SIPC $500K / SG DI S$100K、台灣 2026 連續受益人信託 100 年存續新規。跨國分層：台灣（家庭 + 稅務接點）+ SG / CH（制度 / 保管）+ US（執行）、不是「全部放一國」
+- **GPT 補了 / 漏了**：我之前點出的 7 個 missing layer 中、GPT 補了 3 個（治理 mechanism / voting / dispute）、partial 補 2 個（transition path / boundary mechanism）、完全沒處理 2 個（從 Sir 現狀走到 v0.2 setup 的 transition path、家族成員擴張界線）。Hidden context（借名 unwind / 21 年 active capability / 太太 information asymmetry / 弟精神問題）GPT 不可能知道、Sir 必須自己跟 lead counsel 補
+- **v0.3 結構**（`scratch/家族v0.3.md`）：保留 v0.2 一到十章 + 核心句完整、新增 4 章 — 十一 治理 mechanism（三層 voting 憲法 unanimous / 政策 2/3 / 日常 IPS + 三個獨立角色 trustee / 估值專家 / facilitator + 三層衝突處理 mediation / expert / arbitration）、十二 退出公式（30 天通知 / 60 天冷靜期 / 10-20% 初始 + 3-7 年分期 / liquid 不用 minority discount / illiquid 獨立估值）、十三 跨國分層 + 顧問體系（微型家辦不做 SFO + 台/SG/CH/US 各層角色 + lead counsel / lead tax / trustee / custodian / facilitator RACI）、十四 實施順序（短/中/長期 Gantt + 「先做順序、不要先做工具」收尾）
+- **三層 framework 整體**：(a) 家族 v0.3 = public-facing doctrine + mechanism（可給律師 / 顧問看）(b) memory 4 drafts = internal sensitive context（爸 85 / 太太 / 弟 / 借名、不對外）(c) portfolio-db V1 = Sir 自己 active 階段工具
+- **doctrine point**：v0.3 mimic Sir voice（短句 / blockquote 強調 / 列表 enumerate / 不堆術語）、不寫成 GPT 顧問報告 style。對應 Sir「畢竟只是建議」哲學 + 「核心價值不易改、操作層可改」pace layering
+- **跨層 mapping**：portfolio-db Layer 0「美股 39% ≈ Sir eco 比重 = 借名 unwind 路徑」其實是 V1 active framework 朝家族 v0.3「個人自由基金 + 家族資本池」前進的中介狀態。Sir eco 部分遷到自己 legal 美股、之後分入女兒 A / B 個人自由基金、就完成從 V1 到 v0.3 的 transition
+- **outstanding（v0.3 範圍外、要 Sir 另解）**：(1) 借名 unwind path（Sir + lead counsel 設計、不能寫進 doctrine）(2) Sir active → 後代 passive 的 hand-over timing（V1 → v0.3 銜接 trigger）(3) 第一層 ↔ 第二層 boundary trigger（何時撥下去個人自由基金）(4) 家族成員定義（配偶 / 同性 / 離婚 / 再婚 / 非婚生 / 孫輩 qualify 條件）^ck-260530-family-v03-integration
+
+---
+
+## 2026-05-29（週五、接續）
 
 ### 17:00 [MINI] V1 第十二節 final（4 子節）+ append 進主檔、framework 12 節完整
 - **觸發**：5/27 Athena 對話 + 5/28 ~ 5/29 framework iteration 後、Sir 拍板 4 個 design decision、第十二節 finalize 並 append 進 `20260527-投組初步想法.md` 主檔
