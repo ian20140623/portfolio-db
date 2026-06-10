@@ -32,7 +32,18 @@
       "Bash(git -C /Users/ianchang/Projects/portfolio-db pull --ff-only)",
       "Bash(git -C /Users/ianchang/Projects/portfolio-db fetch --tags)",
       "Bash(git -C /Users/ianchang/Projects/portfolio-db log --oneline -10)",
-      "Bash(awk ' *)"
+      "Bash(awk ' *)",
+      "Bash(git *)",
+      "Bash(python3 ~/Projects/shared/status.py)",
+      "Bash(grep -iA30 \"機器角色\" ~/Projects/env.machines.md)",
+      "Bash(python3 -m portfoliodb summary all)",
+      "Bash(python3 -m portfoliodb summary breakdown)",
+      "Bash(brctl download *)",
+      "Bash(python3 -m portfoliodb price --help)",
+      "Bash(python3 -m portfoliodb price batch --help)",
+      "Bash(python3 -m portfoliodb holding list --help)",
+      "WebFetch(domain:www.sinotrade.com.tw)",
+      "WebFetch(domain:bank.sinopac.com)"
     ]
   }
 }

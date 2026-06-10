@@ -129,6 +129,17 @@
 
 ---
 
+## 2026-06-10（週三）
+
+### 11:51 [MINI] 投組 review + 家族財富規劃深談 → distilled 入 project memory（不入 git）
+- **投組 review**：`summary breakdown` + 重抓 live 報價，對照 Layer 0 偏離（部位/餘額數字在 DB，不入 log）
+- **家族財富規劃 sensitive 討論**（unwind 執行窗口 / 時序 / 結構）→ 全部 distilled 進 `memory/`（Dropbox、不被 ks vectorize、不入 git）。新增 `draft_unwind_execution_window`、`draft_freedom_and_two_kinds_of_money` + `feedback_portfolio_all_in_ai`，並更新 `MEMORY.md` 索引
+- **無 code 變更**；本 commit 僅 `.claude/settings.local.json` permission allowlist 更新
+- **outstanding**（細節記在 memory）：永豐實際餘額更新進 DB、跨境前置清單
+- 過程踩到 Dropbox FileProvider placeholder evict（hydrate / `MEMORY.md` EPERM 繞 shell 寫入）——已知 papercut，永久解 = Finder 把 `memory/` 設「一律保留在此裝置」
+
+---
+
 ## 2026-05-29（週五、接續）
 
 ### 17:00 [MINI] V1 第十二節 final（4 子節）+ append 進主檔、framework 12 節完整
