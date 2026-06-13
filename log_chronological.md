@@ -140,6 +140,19 @@
 
 ---
 
+## 2026-06-13（週六）
+
+### 16:30 [Mac mini] KS 私密內容分層 doctrine + 清 stale memory leak；家族 context 續談（distilled 入 memory）
+- **KS 隱私發現（非敏感、infra 層）**：續談家族 context 時岔出——5/25 那批 `draft_*` 家族 memory 因早期一次性手動 import **殘留在 ks 索引、跨專案 `ks_search` 搜得到**（project-docs 37 chunk + `chunks` collection 舊 Windows 路徑 4 chunk = 41）。**修正 6/10 log「不被 ks vectorize」的錯誤認知**——當時其實已 leak。
+- **防線一（清 leak、還原語意）**：停 ks-search/watcher/inbox → 快照 vectordb → 按 source 刪 41 chunk → 驗殘留 0 + 三 query 確認家族內容不再被搜到 → 重啟 → 刪快照。
+- **防線二（output-firewall）**：立 `feedback_private_context_not_content.md`——私層只當 context、對外產物 default-deny、送出前主動揭露含哪些私層（不向量化）。
+- **L0 公開知識**：抽資產規劃相關法規（洗防法 §5/§13、律師 vs 會計師特權、券商/銀行限額、央行結匯、意定監護）成 `Ian-Vault/法規參考/台灣_資產規劃相關法規參考.md`（已查證官方來源、可 ks 搜、零私層）。
+- **KS 分層 doctrine（Mnemosyne spawn 拍）**：三層 L0 public / L1 private-indexed / L2 private-airgapped + D1–D5（D1 `search_all`→allowlist 動核心走 arch-review、D3 upsert 物理 gate、D4 memory 永不 import、D5 跨專案 stale 清理）→ 記入 hub cross_todo `^ck-260613-ks-sensitivity-layering`。Athena spawn 先 framing scoped-retrieval。
+- **家族財富規劃 sensitive 續談**（顧問分工 / 資產規劃法規 / 結構層）→ 全部 distilled 進 `memory/`（本機、不入 git）；更新 `draft_compliance_advisor_sequencing` 等。
+- **無 portfolio-db code 變更**；本 commit 僅 log + `.claude/settings.local.json`（本 session 法規 WebFetch 網域 + bash 權限累積）。
+
+---
+
 ## 2026-05-29（週五、接續）
 
 ### 17:00 [MINI] V1 第十二節 final（4 子節）+ append 進主檔、framework 12 節完整
