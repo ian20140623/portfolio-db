@@ -16,3 +16,6 @@ scripts/scratch/
 
 # WORKTREE_GUIDE Ver 2.0
 .worktree/
+
+# exodus Phase 4: 本機 scratch（揮發暫存、不進 git、見 shared/CLAUDE.md）
+scratch/
