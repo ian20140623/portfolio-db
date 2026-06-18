@@ -43,7 +43,17 @@
       "Bash(python3 -m portfoliodb price batch --help)",
       "Bash(python3 -m portfoliodb holding list --help)",
       "WebFetch(domain:www.sinotrade.com.tw)",
-      "WebFetch(domain:bank.sinopac.com)"
+      "WebFetch(domain:bank.sinopac.com)",
+      "Bash(python3 -m portfoliodb account list)",
+      "Read(//Users/ianchang/Library/CloudStorage/Dropbox/PJHub/portfolio-db/**)",
+      "Read(//Users/ianchang/Library/LaunchAgents/**)",
+      "Bash(crontab -l)",
+      "Bash(python3 *)",
+      "Bash(chmod +x scripts/install_backup_schedule.sh)",
+      "Bash(bash scripts/install_backup_schedule.sh)",
+      "Bash(launchctl print *)",
+      "Bash(launchctl kickstart *)",
+      "Read(//Users/ianchang/Library/Logs/**)"
     ]
   }
 }

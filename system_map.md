@@ -90,6 +90,7 @@ DB / credentials 走 per-OS app-data dir（`db.APP_DIR`）、跨平台分流、*
 portfoliodb/
   cli.py                    ← CLI 入口（所有 click 指令）
   db.py                     ← SQLite 連線與 schema 初始化
+  backup.py                 ← off-machine cold backup（online-backup API → Dropbox、輪替 + integrity check + restore）
   models.py                 ← dataclass 定義（User, Account, Holding, ...）
   __main__.py               ← python -m portfoliodb 入口
 
@@ -216,7 +217,8 @@ TWD / USD / SGD / HKD / JPY / EUR / CNY / GBP / AUD / NZD / ZAR
 *last updated: 2026-05-24*
 
 - **Speculative benefit vs concrete cost**（2026-05-26 Athena framework）：portfolio-db design 對 feature decision 的 filter — **對 speculative benefit + concrete cost、default 不 hedge**（例如：mandatory commitment ritual / 4-question prompt 等「也許 protect alpha」的 friction 一律不做、因為 time 是 concrete cost、alpha protection 是 speculative）。對 concrete benefit + concrete cost、比大小決定。Time > speculative alpha 是 Sir 的真實 weighting
-- **Single-machine app**：DB 留 master 機（Mac mini）、跨機器讀靠 Tailscale ssh / 之後做 API。不靠 cloud sync DB 檔（SQLite + WAL 會跟 OneDrive/Dropbox/iCloud 衝突致 corruption）
+- **Single-machine app**：DB 留 master 機（Mac mini）、跨機器讀靠 Tailscale ssh / 之後做 API。不靠 cloud sync DB **live 檔**（SQLite + WAL 會跟 OneDrive/Dropbox/iCloud 衝突致 corruption）
+- **Off-machine cold backup**（2026-06-18 加入、補 single-machine 設計缺口）：「不 live sync」≠「不備份」。`portfoliodb/backup.py` 用 SQLite online-backup API 產生**靜態一致快照**（無 WAL）→ 寫進 Dropbox `PJHub/portfolio-db/db_backups/` 當 cold copy（單向、不 live 開啟、不會 corruption）。`.tmp` → atomic rename 發布、寫後 `PRAGMA integrity_check`、輪替保留 30 份。launchd `com.portfoliodb.backup` 每日 03:30 自動跑（`scripts/install_backup_schedule.sh` 安裝）。CLI：`backup` / `backup list` / `backup restore [檔] [--force]`（restore 會先存 pre-restore 安全副本）。**起因**：2026-06-14 Mac mini 重灌、本機 AppData 的 DB + migration 快照全失、無 Time Machine 無 off-machine copy → DB 整個重建。當初只做對「不 live sync」一半、沒做「定期 cold dump」另一半
 - **資料攝取務實主義**：API > CSV > 截圖 vision 三條路徑、依券商現有可達性決定。台灣券商 CSV 匱乏 + API 申請門檻高、截圖路徑成為事實上的主路徑
 - **兩層所有權**：legal owner（戶頭名義）⊥ economic owner（錢實際是誰的）。報稅 / 對帳走 legal、portfolio 統計走 economic
 - **憑證不進版控**：credentials.json 存 APP_DIR，不在 OneDrive 也不在 Git

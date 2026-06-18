@@ -1,10 +1,12 @@
 """CLI entry point for PortfolioDB."""
 
+from datetime import datetime
+
 import click
 from rich.console import Console
 from rich.table import Table
 
-from portfoliodb.db import init_db
+from portfoliodb.db import init_db, DB_PATH
 from portfoliodb.utils.formatting import (
     format_currency, format_pnl, format_percent, format_shares, pnl_color,
 )
@@ -27,8 +29,77 @@ def cli():
 def init():
     """Initialize the database (create tables)."""
     init_db()
-    from portfoliodb.db import DB_PATH
     console.print(f"[green][OK][/green] Database initialized at {DB_PATH}")
+
+
+# ─── backup commands ─────────────────────────────────────────────────
+
+@cli.group(invoke_without_command=True)
+@click.pass_context
+def backup(ctx):
+    """Off-machine DB cold backup (Dropbox). Bare `backup` snapshots now."""
+    if ctx.invoked_subcommand is not None:
+        return
+    from portfoliodb.backup import create_backup
+    path = create_backup()
+    if path is None:
+        console.print("[yellow]No database found; nothing to back up.[/yellow]")
+        console.print(f"[dim]Expected at: {DB_PATH}[/dim]")
+        return
+    console.print(
+        f"[green][OK][/green] Backup created: {path.name} "
+        f"({path.stat().st_size:,} bytes)"
+    )
+    console.print(f"[dim]{path.parent}[/dim]")
+
+
+@backup.command("list")
+def backup_list():
+    """List available cold backups (newest first)."""
+    from portfoliodb.backup import list_backups, backup_dir
+    items = list_backups()
+    if not items:
+        console.print(f"[yellow]No backups in {backup_dir()}[/yellow]")
+        return
+    table = Table(title=f"Backups in {backup_dir()} ({len(items)})")
+    table.add_column("File")
+    table.add_column("Size", justify="right")
+    table.add_column("Modified")
+    for p in items:
+        st = p.stat()
+        table.add_row(
+            p.name,
+            f"{st.st_size:,}",
+            datetime.fromtimestamp(st.st_mtime).strftime("%Y-%m-%d %H:%M"),
+        )
+    console.print(table)
+
+
+@backup.command("restore")
+@click.argument("filename", required=False)
+@click.option("--force", is_flag=True,
+              help="Overwrite existing DB (current DB saved to pre-restore copy first)")
+def backup_restore(filename, force):
+    """Restore a backup into the live DB. No FILENAME = newest backup."""
+    from portfoliodb.backup import list_backups, restore_backup, backup_dir
+    if filename is None:
+        items = list_backups()
+        if not items:
+            console.print(f"[red]No backups available in {backup_dir()}[/red]")
+            return
+        src = items[0]
+        console.print(f"[dim]No file given; using newest: {src.name}[/dim]")
+    else:
+        src = backup_dir() / filename
+    try:
+        dest = restore_backup(src, force=force)
+    except FileExistsError as e:
+        console.print(f"[red]Refused:[/red] {e}")
+        return
+    except FileNotFoundError as e:
+        console.print(f"[red]Not found:[/red] {e}")
+        return
+    console.print(f"[green][OK][/green] Restored {src.name} → {dest}")
 
 
 # ─── user commands ───────────────────────────────────────────────────

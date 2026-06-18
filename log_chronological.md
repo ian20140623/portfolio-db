@@ -153,6 +153,21 @@
 
 ---
 
+## 2026-06-18（週四）
+
+### [Mac mini] 建立 off-machine cold backup 機制（補 6/14 重灌資料全失的缺口）
+- **觸發**：Sir 報「錢從富邦匯到新加坡、留 200 萬下來」（unwind plan 6/10 拍板 one-shot 富邦→SG 結構正式執行），要落帳時發現 `portfolio.db` 開不了——AppData 目錄整個不存在。查出 **6/14 Mac mini 重灌**：DB 是刻意不進 git / 不進雲端的單機設計（避 SQLite WAL 衝突），重灌 = 本機 DB + migration 快照全失、**無 Time Machine、無 off-machine copy**。Dropbox 只有家族 memory `.md`（還在）、DB 從來沒備份。
+- **根因診斷**：當初 system_map:219「不 cloud sync DB」只做對一半——對的是「不能 live 雙向 sync」（WAL corruption），漏的是「定期 cold dump 到 off-machine」。靜態快照沒 WAL 問題、單向 copy 不會 corruption，是當初該做沒做的安全網。
+- **`portfoliodb/backup.py`**（新模組）：SQLite online-backup API 產生一致性快照（無 WAL）→ 寫 Dropbox `PJHub/portfolio-db/db_backups/`。`.tmp` → atomic rename 發布（Dropbox 不會上傳半截檔）、寫後 `PRAGMA integrity_check`、輪替保留 30 份、`*.db.tmp` 自動清。`restore` 前先驗 integrity + 存 `portfolio.pre-restore-*.db` 安全副本（可逆）。無 DB 時 `create_backup` 乾淨回 None（排程在重建前是 no-op 非 error）。
+- **CLI**：`backup`（立即）/ `backup list` / `backup restore [檔] [--force]`。
+- **排程**：launchd `com.portfoliodb.backup` 每日 03:30（`scripts/install_backup_schedule.sh` 從環境生 plist、已安裝 + kickstart 驗過跑通）。
+- **測試**：`tests/test_backup.py` 10 案全綠（no-op / 快照 integrity / atomic 無 .tmp / 輪替 / stale tmp 清除 / restore / 拒覆蓋無 force / force + 安全副本 / 拒 corrupt / 缺檔）。非 yfinance 既有測試 31 全綠。
+- **遵 Recovery≠Optimization**：本次只建備份機制（獨立改動）、不夾帶任何 schema / 邏輯優化；DB 重建是下一個獨立步驟。
+- **發現的環境缺口**（reformat collateral、非本次 code 問題）：本機 `yfinance` 未裝（requirements.txt 有、6/14 後沒重裝 deps）→ `price_service` import 失敗、連帶 2 個既有測試 collection error。待 `pip install -r requirements.txt`。
+- **outstanding**：(1) DB 從零重建（log 交易史 + 券商現況截圖）(2) 重建後補落帳富邦→SG 匯出 + 富邦留 NT$2,000,000 (3) 重裝 deps。 ^ck-260618-cold-backup
+
+---
+
 ## 2026-05-29（週五、接續）
 
 ### 17:00 [MINI] V1 第十二節 final（4 子節）+ append 進主檔、framework 12 節完整
