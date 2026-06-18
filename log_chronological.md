@@ -166,6 +166,15 @@
 - **發現的環境缺口**（reformat collateral、非本次 code 問題）：本機 `yfinance` 未裝（requirements.txt 有、6/14 後沒重裝 deps）→ `price_service` import 失敗、連帶 2 個既有測試 collection error。待 `pip install -r requirements.txt`。
 - **outstanding**：(1) DB 從零重建（log 交易史 + 券商現況截圖）(2) 重建後補落帳富邦→SG 匯出 + 富邦留 NT$2,000,000 (3) 重裝 deps。 ^ck-260618-cold-backup
 
+### [Mac mini] DB 重建 Phase 1：環境 + 結構層（部位層待截圖）
+- **重裝 deps**：`pip install -r requirements.txt`（yfinance/click/rich/pytest），補 6/14 重灌後缺的 runtime；全測試 35 綠（25 既有 + 10 backup）。
+- **建空 schema**：`portfoliodb init`（12 表全建）。
+- **結構層重建**（從 5/24 log 的帳戶結構 + Sir 確認）：2 users（ian / dad）+ 8 accounts，**ID 順序刻意對齊 5/24**（1=富邦證 2=富邦銀 3=永豐證 4=永豐複委託 5=永豐銀 6=Firstrade 7=SCB-SG-ian 8=SCB-SG-dad），owner 對應全部 Sir 確認過（acct 1/2/8 eco=ian legal=dad、acct 3/4/5 dad/dad、acct 6/7 ian/ian）。instruments 兩層身份跑 m001 --apply reseed（空 DB 只 seed TSMC company + 2 instrument + 4 alias，原 9 條 provisional 是當初從既有部位 backfill 出來的、會在灌持股時自然產生）。
+- **首份真實備份**：`portfolio-20260618-095703.db`（106KB）進 Dropbox、端到端驗證 backup 機制對真實 DB 可用。
+- **Sir 指示**：富邦證 (acct 1) **retiring 以後先不用**（富邦→SG 匯款後），但**先不標 is_active=0**，等截圖確認清空/殘留再設（避免擋掉可能要補的轉出紀錄）。
+- **重建策略**（對齊 Recovery≠Optimization）：log 只有零星部位片段、均價救不回 → 不重建 5/24 舊狀態套 delta，改**直接抓 6/18 當前部位**重灌（天然含富邦匯出 + 留 200 萬 + SG 進款）；transaction 歷史 6/14 前不可逆遺失、記為可接受偏離。
+- **outstanding**：holdings + cash 逐帳戶截圖灌入（Sir 慢慢給）→ 每批灌完 commit + backup；灌完富邦證後標停用；落帳富邦→SG + 留 NT$2,000,000。 ^ck-260618-db-rebuild-phase1
+
 ---
 
 ## 2026-05-29（週五、接續）
