@@ -53,7 +53,8 @@
       "Bash(bash scripts/install_backup_schedule.sh)",
       "Bash(launchctl print *)",
       "Bash(launchctl kickstart *)",
-      "Read(//Users/ianchang/Library/Logs/**)"
+      "Read(//Users/ianchang/Library/Logs/**)",
+      "Bash(pm2 list *)"
     ]
   }
 }

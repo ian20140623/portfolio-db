@@ -177,6 +177,18 @@
 
 ---
 
+## 2026-06-22（週一）
+
+### 11:30 [Mac mini] 4 天 re-sync 驗證 + 建截圖匯入通道（Phase 2 前置）
+- **re-sync 驗證**（6/18→6/22 隔 4 天）：repo up-to-date；備份機制每日有跑（6/18~6/21 共 4 份日快照 + 輪替正常）；DB 結構完好（直查 DB：8 accounts / 2 users / 0 holdings / 0 cash，符合 Phase 1 結束狀態）。
+- **備份時間觀察**：plist 設 03:30、實際快照落在 18:30。研判 Mac mini 03:30 在睡、launchd 把錯過的 calendar job 延到機器醒來（約 18:30）補跑。**每日一份 off-machine 快照的目標達成**，時間點不影響保護力；要釘死需另設 pmset 喚醒（暫不做）。
+- **手機截圖丟不進來 root cause**：Sir 用 **Claude 手機 App** 丟圖、那是**獨立 session**、跟本 Mac mini 終端機 session 不互通 → 圖不會出現在這裡（不是壞掉）。DB rebuild context 在本 session、DB/repo/備份在 Mac mini。
+- **解法 = 建檔案通道繞過聊天圖片**：建 `~/Library/CloudStorage/Dropbox/PJHub/portfolio-db/screenshots_inbox/`。Sir 手機 Dropbox App 上傳截圖到此夾 → Dropbox sync 到 Mac mini → JV 用 Read tool 直接讀檔灌入。AirDrop→Downloads 為備援路徑。
+- **Phase 2 SOP 定案**：截圖落 `screenshots_inbox/` →（檔名標帳戶更佳、不標 JV 逐張確認）→ JV 灌 holdings/cash → 當場對帳 → 每批 commit + backup。建議順序富邦證→富邦銀→SCB SG（匯款動線）。
+- **本 commit 僅 log + settings.local.json（pm2 list 權限）**；無 code 變更。 ^ck-260622-rebuild-phase2-channel
+
+---
+
 ## 2026-05-29（週五、接續）
 
 ### 17:00 [MINI] V1 第十二節 final（4 子節）+ append 進主檔、framework 12 節完整
