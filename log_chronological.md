@@ -294,6 +294,22 @@
 - **帳戶總值驗證**（`summary account 3`）：持股市值 NT$196,238,500 + 現金 NT$4,754,075 = **NT$200,992,575**、跟 broker app 「庫存試算 + 銀行餘額」一致（未交割前 view）
 - **5/28 reconcile reminder**：交割日 broker 銀行帳會實扣 4,212,337、剩 541,738。那天 Sir 再給 broker 銀行餘額截圖、`cash set 3 TWD <新數字>` 重對齊。3481 那筆 cash flow（−4,429,803）DB 沒記、5/28 broker 結算後 DB 用 set 蓋過去即可 ^ck-260526-tx-canonical-cash-reconcile
 
+### 16:30 [MINI] DB rebuild Phase 2 — 全 8 帳戶部位 + 現金入庫（截圖匯入）+ 永豐 Shioaji API 申請
+- **Phase 2 目標**：Phase 1 建好 schema 後、Phase 2 把真實部位全填入
+- **資料來源**：全截圖手動匯入（各券商 app 截圖 → JV 讀圖 → CLI 逐筆輸入）；永豐 Shioaji API 申請中、正式環境尚未開通
+- **入庫結果（8 帳戶）**：
+  - acct 1 富邦證：無持股（空）
+  - acct 2 富邦銀：TWD 2,102,828 + USD 1.45
+  - acct 3 永豐證：9 檔台股（2330/2337/2383/2472/2486/3481/3702/8021/8299）含均價
+  - acct 4 永豐複委託：NVDA 6,029 股 @ USD 95.64
+  - acct 5 永豐銀：TWD 6,978,639
+  - acct 6 Firstrade：GOOG 1,170 @ USD 315.80、NVDA 2,381 @ USD 135.82、cash USD 120,108
+  - acct 7 SCB-SG-ian：NVDA 17 @ USD 190.09、cash SGD 62.74
+  - acct 8 SCB-SG-dad：NVDA 14,316 @ USD 209.78、TSM 1,575 @ USD 320.49、cash SGD 50,147.59
+- **永豐 Shioaji 申請流程**：大戶豐 app 申請 API → 下載同意書 → 簽署 → 模擬環境測試（place_order 2890 成功）→ 正式環境等審核中；background polling script (sinopac_wait_production.py) 跑中，通過時 macOS 通知
+- **均價公式**：永豐/富邦 TW 股：均價 = 現價 × 0.995575 − 損益/股數；Firstrade/SCB：均價 = 市值 − 損益 / 股數（無台灣稅）
+- **schema 注意**：avg_cost 無 per-holding currency field、SCB-SG 帳戶內 USD 持股均價以 SGD label 顯示但數字正確（USD 原值）^ck-260705-phase2-holdings-import
+
 ### 14:39 [MINI] order add signed-shares + review retrospective + breakdown intent column + README + design doctrine
 - **觸發**：跟 Athena 9 輪對話討論「加碼/減碼如何 model」、最終 ship list 5 條（同表 annotation / 一行 CLI / retrospective / 不擴 schema / doctrine 寫進文件）
 - **CLI 改動**：

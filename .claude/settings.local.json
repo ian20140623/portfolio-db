@@ -54,7 +54,25 @@
       "Bash(launchctl print *)",
       "Bash(launchctl kickstart *)",
       "Read(//Users/ianchang/Library/Logs/**)",
-      "Bash(pm2 list *)"
+      "Bash(pm2 list *)",
+      "Read(//Users/ianchang/Library/CloudStorage/Dropbox/PJHub/**)",
+      "Read(//Users/ianchang/Library/CloudStorage/Dropbox/**)",
+      "Read(//Users/ianchang/Downloads/**)",
+      "Bash(pm2 jlist *)",
+      "WebSearch",
+      "WebFetch(domain:sinotrade.github.io)",
+      "WebFetch(domain:ai.sinotrade.com.tw)",
+      "WebFetch(domain:medium.com)",
+      "WebFetch(domain:arkalytix.sodomcode.com)",
+      "WebFetch(domain:ithelp.ithome.com.tw)",
+      "Bash(pip3 install *)",
+      "WebFetch(domain:eyetrading.github.io)",
+      "Bash(xattr *)",
+      "Bash(mdfind -onlyin ~/Projects/core-infra \"sanctum\")",
+      "Bash(echo \"PID: $!\")",
+      "Bash(mdfind -onlyin ~/Library/CloudStorage/Dropbox/PJHub/knowledge-system \"inbox\")",
+      "Bash(pm2 show *)",
+      "Bash(mdfind -onlyin ~/Library/CloudStorage/Dropbox \"inbox\")"
     ]
   }
 }
