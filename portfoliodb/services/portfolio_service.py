@@ -35,15 +35,25 @@ def get_account_summary(account_id: int) -> dict:
     tickers = [h.ticker for h in holdings]
     prices = price_service.fetch_prices(tickers) if tickers else {}
 
+    # FX rates for converting holding prices to account currency (handles
+    # cross-currency positions like USD stocks in an SGD account).
+    fx_rates_for_acc = fx_service.get_all_rates(account.currency)
+
     holding_details = []
     total_stock_value = 0
 
     for h in holdings:
         price_info = prices.get(h.ticker, {})
         current_price = price_info.get("price")
+        # Use the price's own currency (e.g. USD for NVDA), not account currency.
+        price_currency = price_info.get("currency") or account.currency
 
         if current_price is not None:
-            market_value = current_price * h.shares
+            if price_currency != account.currency:
+                fx = fx_rates_for_acc.get(price_currency, 1.0)
+                market_value = current_price * h.shares * fx
+            else:
+                market_value = current_price * h.shares
             cost_basis = h.avg_cost * h.shares
             unrealized_pnl = market_value - cost_basis
             pnl_pct = ((current_price / h.avg_cost) - 1) * 100 if h.avg_cost > 0 else 0
@@ -138,14 +148,19 @@ def get_family_breakdown(base_currency: str = "TWD") -> dict:
             prices = {}
 
         for h in holdings:
-            current = prices.get(h.ticker, {}).get("price")
+            price_info = prices.get(h.ticker, {})
+            current = price_info.get("price")
+            # Use the price's own currency so cross-currency positions
+            # (e.g. USD stocks in an SGD account) convert correctly to TWD.
+            price_currency = price_info.get("currency") or acc.currency
+            price_rate = fx_rates.get(price_currency, 1.0)
             mv_local = (current or 0) * h.shares
-            mv_base = mv_local * rate
+            mv_base = mv_local * price_rate
             positions.append({
                 "type": "stock", "ticker": h.ticker,
                 "shares": h.shares, "avg_cost": h.avg_cost,
                 "current_price": current,
-                "currency": acc.currency,
+                "currency": price_currency,
                 "mv_local": mv_local, "mv_base": mv_base,
                 "account_id": acc.id, "account_name": acc.account_name,
                 "broker": acc.broker, "market": acc.market,
