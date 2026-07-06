@@ -19,3 +19,4 @@ scripts/scratch/
 
 # exodus Phase 4: 本機 scratch（揮發暫存、不進 git、見 shared/CLAUDE.md）
 scratch/
+.playwright-mcp/

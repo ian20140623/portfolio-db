@@ -326,6 +326,28 @@
 - **Athena 9 輪過程的 meta lesson**（不入 git、見 memory）：Sir 第 1 輪直覺「做一起最方便」是對的、Athena framework 兩輪 over-engineered（friction-as-feature → minimax regret）、Sir 用「不需要為摩擦可能的好處浪費生命」拍板 reduce-friction direction。Conversation pattern = 壓力測試已有直覺、不是 think-out-loud find answer
 - **沒改 schema**：planned_orders 既有 `reason TEXT` 一個 free text field 就夠、不擴 conviction_score / why_must / trigger / alternative ^ck-260526-order-signed-shorthand-retrospective
 
+## 2026-07-07（一）
+
+### 04:47 [Mac mini] 投研 session 續 — 群聯持倉框架、NAND供需模型建立、記憶體模型改名
+- **觸發**：接續 7/6 投研 session，討論群聯(8299)持倉決策 + 建立 NAND 知識模型
+- **群聯 8299 自結損益確認無**：搜遍 MOPS 5月公告，確認群聯不公布月度自結損益（自願揭露，選擇不做）。現有最新數據：Q1'26 EPS=68.80、5月營收 +301% YoY、4+5月合計 NT$430.4億 > Q1全季 $409.7億
+- **群聯持倉框架討論**：
+  - Sir 持倉成本 ~700-1000，thesis 是「NAND 結構性缺貨 2-3 年」，不是季報交易
+  - 身份張力：controller IP 護城河是真的，但 P&L 長相是模組廠 → 市場給模組廠倍數 → 熄火現象
+  - 結論：thesis 沒破，持有一致。出場 trigger = NAND 月營收年增率連續 2 個月下滑 / Q2 法說管理層暗示 H2 downside / NAND spot 見頂 + 庫存墊高
+  - Sir 自我反省：「我不是因為財報而下決定，我預期的是長期趨勢」——確認這不是盲點而是框架一致性；exit trigger 也應該是「趨勢語言」而非財報數字
+- **NAND 供需研究（國票 4/30 關鍵數據）**：
+  - 全球 NAND wafer 月產能 2025→2026 淨減 -82K（三星 -90K 轉 DRAM/HBM、SK -10K、Micron 持平、Kioxia +18K）
+  - bit 供給：2026 +20%、2027 **+10%**；bit 需求：2027 **+26.7%**（供不應求加速）
+  - Gartner：1Q26 sufficiency -9.6%，最早 4Q27 微幅轉正
+  - MS 7/2：LTA 訊號暗示市場緊到 2028+；bear case 需同時兩個條件（中國限制放寬 + 三星紀律崩潰）
+  - 長江存儲：2 新廠最快 2028 後、優先填中國內需
+- **Vault 知識模型重組**：
+  - `記憶體模型.md` 改名 → `DRAM模型.md`（含 claim_ledger、資料包資料夾、外部 wikilink 全更新）
+  - 新建 `NAND模型.md` + `NAND模型_claim_ledger.md`：整合國票/MS/富邦/群益 4 份報告的供需數據、sufficiency 軌跡、YMTC 分析、受惠 map
+  - YMTC 2028 產能規模列為 open question，已記入 cross_todo 待追蹤
+- **3年後報紙思考實驗**：Bull case = 群聯成 AI 存儲基建核心供應商；Bear case = NAND 循環週期再現。Sir 最終判斷：NAND 缺貨是結構性，thesis 持續有效 ^ck-260707-nand-session
+
 ## 2026-07-06（日）
 
 ### 23:xx [Mac mini] 投研 session — Lynch PEG + Kelly 架構完整化、台光電 exit thesis、GOOG 分析、大調整 framework
