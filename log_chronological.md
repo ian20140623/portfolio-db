@@ -325,3 +325,35 @@
 - **README.md 新增**：第一次來看 repo 的人 / 未來重 visit 自己的 entry point；含 quickstart 5 行 command 走完 full workflow、tech stack、DB per-OS path、CLI 索引、ticker 規則、設計原則
 - **Athena 9 輪過程的 meta lesson**（不入 git、見 memory）：Sir 第 1 輪直覺「做一起最方便」是對的、Athena framework 兩輪 over-engineered（friction-as-feature → minimax regret）、Sir 用「不需要為摩擦可能的好處浪費生命」拍板 reduce-friction direction。Conversation pattern = 壓力測試已有直覺、不是 think-out-loud find answer
 - **沒改 schema**：planned_orders 既有 `reason TEXT` 一個 free text field 就夠、不擴 conviction_score / why_must / trigger / alternative ^ck-260526-order-signed-shorthand-retrospective
+
+## 2026-07-06（日）
+
+### 23:xx [Mac mini] 投研 session — Lynch PEG + Kelly 架構完整化、台光電 exit thesis、GOOG 分析、大調整 framework
+- **觸發**：跟 Sir 深度討論 AI 供應鏈個股排序與部位調整策略；純研究 session、無程式碼改動
+- **LITE thesis 確認（InP / mini LED 共存）**：InP 管 rack-level coherent 長距離；mini LED 管 board-level 短距低帶寬。兩者不互斥、mini LED 鋪越廣反而帶動更多 rack 層需求 → Sir 確認「對」
+- **台光電 exit thesis 完整表述（Sir 原話）**：
+  - 「台光電的挑戰不一樣，因為 Kyber 的 midplane 技術挑戰很大」
+  - 「銅不一定悲觀，畢竟還是很多需求，可是光是必然」
+  - 「就像散熱的氣冷風扇一樣」——市場對風扇股（建準 2421）定價早 stalled，而真正的算力散熱（雙鴻 3324 +651%、奇鋐 3017 +2260%）另起爐灶
+  - **資料驗證**：建準 2421 2023Q2–2025Q1 共 18 個月漲 +292%（38→149）、期間雙鴻/奇鋐各自 +651%/+2260%；市場早在技術實際切換前就重新定價
+  - **決定**：exit 台光電（現 12.7% = NT$49.3M）；timing 未定
+- **G trajectory 第 5 維度（作為 Kelly b 的 proxy）**：
+  - 5 類：上彎=5、上彎到持平=4、持平=3、持平到下彎=2、下彎=1
+  - Sir 給分（主觀判斷）：NVDA=2、台達電=3、LITE=5、台積電=2、MU=3、欣興=3、台光電=2
+  - 設計原則：EPS-based b 需要 2030E 估算（3 年持有到 2029 → 看 2030E），目前不存在；G trajectory 是唯一可操作的 b proxy
+- **Kelly 重算（以 G score 作 b）**：
+  - 爆炸型（G=5）b=7.5、結構型（G=3）b=2.5、持平到下彎（G=2）b=1.5
+  - f* 排序：NVDA 0.85 → 台積電 0.75 → 台達電 0.65 → LITE 0.64 → 欣興 0.60 → MU 0.56
+  - 正規化後比重：NVDA 21%、台積電 19%、台達電 16%、LITE 16%、欣興 15%、MU 14%
+- **投資組合哲學討論（Lynch vs Kelly）**：
+  - Lynch 90%+ 持股、多股分散管風險；Kelly 部位大小管風險
+  - 矛盾點：純 EV 最大化應 100% 壓 PEG 最低那檔 → Sir 認為顯然不合理 → Kelly log utility 解決（Jensen 不等式：E[log W] < log(E[W])）
+  - 板塊集中問題：純 bottom-up 允許意外主題集中 → 兩層解法：sector cap（top-down）+ 個股評分（bottom-up）→ Sir 仍認為最後還是自己決定
+- **GOOG 分析（Sir 原話保留）**：
+  - TPU thesis：「TPU 就是不對稱武器」——自建晶片讓 compute cost 結構性低於外購、Gemini 在 internal Google 生產力已展現
+  - User base curse：「理論上是優勢，可是至少在目前為止，我覺得好像變成一種詛咒」——數億用戶每次 query 都吃 compute、Anthropic 等 focused player 不需養大眾流量
+  - Coding lag：「現在程式好像沒有追回來的跡象」——enterprise market 的主要入口，落後 = 商業地位侵蝕
+  - Binary outcome：「出局或王者都有可能」——水面下看不到的東西、不確定性最高
+  - 目前持 3.4%（NT$13.2M），Sir 判斷「不急著減」
+- **持倉快照（2026-07-05 數據）**：總計 NT$388.4M；NVDA 36.5%（最大）、台光電 12.7%（待 exit）、台達電 11.0%、欣興 10.2%、台積電 8.0%、MU 4.0%、LITE 3.5%、GOOG 3.4%、其他台股 + 現金 3.6%
+- **大調整 framework 完成、execution 待定**：買賣決策框架建好但實際執行時點、台光電 exit 後資金去向未最終確認 ^ck-260706-investment-research-session

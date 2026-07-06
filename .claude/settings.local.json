@@ -72,7 +72,8 @@
       "Bash(echo \"PID: $!\")",
       "Bash(mdfind -onlyin ~/Library/CloudStorage/Dropbox/PJHub/knowledge-system \"inbox\")",
       "Bash(pm2 show *)",
-      "Bash(mdfind -onlyin ~/Library/CloudStorage/Dropbox \"inbox\")"
+      "Bash(mdfind -onlyin ~/Library/CloudStorage/Dropbox \"inbox\")",
+      "Skill(pdb-sync)"
     ]
   }
 }
