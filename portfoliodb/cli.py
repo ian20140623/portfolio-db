@@ -676,6 +676,123 @@ def order_review(since_days):
         console.print("\n[dim]無 order data 可 review。先用 `order add` 寫幾個 plan、累積 data。[/dim]")
 
 
+# ─── rank commands ────────────────────────────────────────────────────
+
+@cli.group()
+def rank():
+    """Individual-stock ranking snapshots (PEG / Kelly f* / 15-point framework)."""
+    pass
+
+
+@rank.command("add")
+@click.argument("ticker")
+@click.argument("method", type=click.Choice(["peg", "kelly", "fifteen_point"], case_sensitive=False))
+@click.argument("headline_score", type=float)
+@click.option("--date", "score_date", default=None,
+              help="Date the ranking reflects (YYYY-MM-DD). Default: today")
+@click.option("--weight", "weight_pct", type=float, default=None,
+              help="Suggested portfolio weight percent, e.g. 21 for 21% (mainly Kelly)")
+@click.option("--source", default=None, help="Citation, e.g. '7/6 投研 session'")
+@click.option("--notes", default=None, help="Supporting detail (G/FwdPE, b/G-trajectory, dimension breakdown)")
+@click.option("--market", "market_hint", default=None,
+              type=click.Choice(["TW", "US", "SG"], case_sensitive=False),
+              help="Market hint for bare-digit TW tickers starting with 2/3 (e.g. 2330 + --market TW). "
+                   "Tickers starting with 6/8/9 are ambiguous (上市/上櫃) — write the suffix explicitly instead.")
+@click.option("--framework-version", "method_version", default=None,
+              help="Which iteration of the methodology produced this score (e.g. 'V1', 'V1.1'). "
+                   "The framework is a living doc, not frozen — tag it so later analysis doesn't "
+                   "conflate scores from different rule sets. Optional but encouraged.")
+def rank_add(ticker, method, headline_score, score_date, weight_pct, source, notes, market_hint, method_version):
+    """Record a ranking snapshot. Example: rank add NVDA kelly 0.85 --weight 21 --source "7/6 投研 session\""""
+    from portfoliodb.services.ranking_service import add_ranking
+    if score_date is None:
+        score_date = datetime.now().strftime("%Y-%m-%d")
+    try:
+        r = add_ranking(
+            ticker, method, score_date, headline_score,
+            weight_pct=weight_pct, source=source, notes=notes, market_hint=market_hint,
+            method_version=method_version,
+        )
+        version_tag = f" [{r.method_version}]" if r.method_version else ""
+        console.print(f"[green][OK][/green] {r.ticker} {r.method}{version_tag} @ {r.score_date}: {r.headline_score}")
+    except Exception as e:
+        console.print(f"[red][ERROR][/red] {e}")
+
+
+@rank.command("list")
+@click.option("--method", type=click.Choice(["peg", "kelly", "fifteen_point"], case_sensitive=False),
+              default=None, help="Filter by method; without this, latest-only ranking is skipped")
+@click.option("--ticker", default=None, help="Filter by ticker")
+@click.option("--latest", is_flag=True, help="Show only the latest snapshot per ticker, ranked best-to-worst")
+def rank_list(method, ticker, latest):
+    """List ranking snapshots."""
+    from portfoliodb.services.ranking_service import list_rankings, latest_rankings
+
+    if latest:
+        if method is None:
+            console.print("[red][ERROR][/red] --latest requires --method (direction of \"better\" is method-specific)")
+            return
+        rows = latest_rankings(method)
+    else:
+        rows = list_rankings(method=method, ticker=ticker)
+
+    if not rows:
+        console.print("[dim]無 ranking data。先用 `rank add` 記幾筆。[/dim]")
+        return
+
+    t = Table()
+    if latest:
+        t.add_column("排名", justify="right")
+    t.add_column("Ticker")
+    t.add_column("Method")
+    t.add_column("Ver")
+    t.add_column("Date")
+    t.add_column("Score", justify="right")
+    t.add_column("Weight%", justify="right")
+    t.add_column("Source")
+    for i, r in enumerate(rows, start=1):
+        row = []
+        if latest:
+            row.append(str(i))
+        row += [
+            r.ticker, r.method, r.method_version or "",
+            r.score_date,
+            f"{r.headline_score:g}" if r.headline_score is not None else "—",
+            f"{r.weight_pct:g}" if r.weight_pct is not None else "",
+            r.source or "",
+        ]
+        t.add_row(*row)
+    console.print(t)
+
+
+@rank.command("show")
+@click.argument("ticker")
+def rank_show(ticker):
+    """Full ranking history (all methods) for one ticker."""
+    from portfoliodb.services.ranking_service import ticker_history
+    rows = ticker_history(ticker)
+    if not rows:
+        console.print(f"[dim]{ticker}: 無 ranking data。[/dim]")
+        return
+
+    t = Table(title=rows[0].ticker)
+    t.add_column("Date")
+    t.add_column("Method")
+    t.add_column("Ver")
+    t.add_column("Score", justify="right")
+    t.add_column("Weight%", justify="right")
+    t.add_column("Source")
+    t.add_column("Notes")
+    for r in rows:
+        t.add_row(
+            r.score_date, r.method, r.method_version or "",
+            f"{r.headline_score:g}" if r.headline_score is not None else "—",
+            f"{r.weight_pct:g}" if r.weight_pct is not None else "",
+            r.source or "", r.notes or "",
+        )
+    console.print(t)
+
+
 # ─── price commands ──────────────────────────────────────────────────
 
 @cli.group()

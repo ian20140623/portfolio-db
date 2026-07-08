@@ -73,7 +73,8 @@
       "Bash(mdfind -onlyin ~/Library/CloudStorage/Dropbox/PJHub/knowledge-system \"inbox\")",
       "Bash(pm2 show *)",
       "Bash(mdfind -onlyin ~/Library/CloudStorage/Dropbox \"inbox\")",
-      "Skill(pdb-sync)"
+      "Skill(pdb-sync)",
+      "Bash(mdfind -onlyin ~/Ian-Vault \"排名\")"
     ]
   }
 }

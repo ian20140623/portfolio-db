@@ -61,6 +61,7 @@ price    get / batch              Yahoo Finance 即時報價
 summary  account / user / all / breakdown  投資組合摘要
 fx       rate / rates             匯率
 sync     sinopac / fubon / firstrade / scb / credentials  券商同步（API + CSV）
+rank     add / list / show        個股排名快照（PEG / Kelly f* / 15分模型，含 method_version 版號追蹤）
 ```
 
 詳細指令參數見 `system_map.md` 或 `python -m portfoliodb <cmd> --help`。
@@ -81,13 +82,24 @@ sync     sinopac / fubon / firstrade / scb / credentials  券商同步（API + C
 - 兩層 schema：`companies` / `instruments` / `company_aliases`、由 `portfoliodb/migrations/m001_canonical_ticker_and_instruments.py` seed
 - 一次性 backfill：`python -m portfoliodb.migrations.m001_canonical_ticker_and_instruments`（dry-run）+ `--apply`、idempotent 可重跑、log 在 `<APP_DIR>/migration_001.log`
 
+## Migrations
+
+**portfolio-db 是 per-machine DB**（每台機器各自的本機檔案、不隨 git pull 自動同步 schema）。跨機器（NB / Air）pull 到新版 code 後、如果 code 引入了 schema 變動（新 constraint、新欄位），**要各自手動跑一次對應的 migration**：
+
+```
+python -m portfoliodb.migrations.m001_canonical_ticker_and_instruments --apply   # ticker canonical + instruments/companies
+python -m portfoliodb.migrations.m002_rankings_schema_hardening --apply          # rankings 表 UNIQUE + method_version
+```
+
+都是 dry-run 預設、`--apply` 才真寫、idempotent 可重跑（已是最終形狀會直接印「nothing to do」）。跑 `--apply` 前建議先 `python -m portfoliodb backup`。
+
 ## Tests
 
 ```
 pytest tests/
 ```
 
-`tests/conftest.py` 用 tmp_db fixture 隔離正式 DB、25 tests 覆蓋 canonical / migration / review aggregation / yfinance noise capture。
+`tests/conftest.py` 用 tmp_db fixture 隔離正式 DB、66 tests 覆蓋 canonical / migration / ranking / review aggregation / yfinance noise capture。
 
 ## 設計原則
 

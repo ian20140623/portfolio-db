@@ -31,6 +31,17 @@ ACCOUNT_TYPES = {"brokerage", "bank"}
 ORDER_STATUSES = {"PENDING", "EXECUTED", "CANCELLED"}
 ORDER_PRIORITIES = {"HIGH", "NORMAL", "LOW"}
 
+# Stock ranking methods (portfolio-db doesn't enforce a single scoring
+# framework — Sir's methodology stack has three: PEG (Lynch-style, lower is
+# better), Kelly f* (higher is better), and the V1 15-point model (掌握度 +
+# 估值吸引力 + 長期品質, higher is better). See ../peg skill and
+# scratch/20260527-投組初步想法.md (Dropbox-synced) for the source doctrine.
+RANKING_METHODS = {"peg", "kelly", "fifteen_point"}
+# Explicit per-method direction (not an exclusion set) so a new method added
+# to RANKING_METHODS without a matching entry here fails loudly (KeyError)
+# instead of silently defaulting to some direction.
+RANKING_DIRECTION = {"peg": "asc", "kelly": "desc", "fifteen_point": "desc"}
+
 # Tax rates
 TW_SELL_TAX_RATE = 0.003  # Taiwan stock sell tax: 0.3%
 

@@ -30,10 +30,12 @@ def tmp_db(tmp_path, monkeypatch):
     monkeypatch.setattr(db_mod, "DB_DIR", db_dir)
     monkeypatch.setattr(db_mod, "DB_PATH", db_path)
 
-    # Migration module caches APP_DIR / LOG_PATH at import — refresh both so
+    # Migration modules cache APP_DIR / LOG_PATH at import — refresh both so
     # the log lands inside tmp_path rather than the real ~/Library path.
     from portfoliodb.migrations import m001_canonical_ticker_and_instruments as m001
     monkeypatch.setattr(m001, "LOG_PATH", db_dir / "migration_001.log")
+    from portfoliodb.migrations import m002_rankings_schema_hardening as m002
+    monkeypatch.setattr(m002, "LOG_PATH", db_dir / "migration_002.log")
 
     db_mod.init_db()
     yield db_path

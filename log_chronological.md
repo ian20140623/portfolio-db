@@ -379,3 +379,18 @@
   - 目前持 3.4%（NT$13.2M），Sir 判斷「不急著減」
 - **持倉快照（2026-07-05 數據）**：總計 NT$388.4M；NVDA 36.5%（最大）、台光電 12.7%（待 exit）、台達電 11.0%、欣興 10.2%、台積電 8.0%、MU 4.0%、LITE 3.5%、GOOG 3.4%、其他台股 + 現金 3.6%
 - **大調整 framework 完成、execution 待定**：買賣決策框架建好但實際執行時點、台光電 exit 後資金去向未最終確認 ^ck-260706-investment-research-session
+
+## 2026-07-08（三）
+
+### 19:16 [Mac mini] 個股排名（rankings）功能 + method_version 版號追蹤 + 跨機器 migration 修復
+- **觸發**：Sir 提「我們做了很多個股的排名」，選擇整合進 portfolio-db（而非只彙整既有筆記）。後續補一句「框架還在演進中、要有版號」，帶出第二輪 schema 變動
+- **新增**：`rankings` 表（ticker/method/method_version/score_date/headline_score/weight_pct/source/notes）+ `ranking_service.py`（add/list/latest/history）+ CLI `rank add/list/show`。DB 只存快照、不算分數；PEG/Kelly/15分模型三種方法論的排名方向（越高越好 vs 越低越好）定義在 `utils/constants.RANKING_DIRECTION`
+- **回填真實資料 13 筆**：7/6 投研 session 的 Kelly f* 排名（NVDA/台積電/台達電/LITE/欣興/MU）+ `../peg` skill 7/5 的 PEG 排名表，各自標上 `method_version`（PEG=`V1`、Kelly=`V1.1`——後者反映 7/6 session 引入的「G-trajectory 當 Kelly b 值 proxy」算法，此延伸尚未寫回 Dropbox-synced 主檔）
+- **依專案 CLAUDE.md 品質規範**（db/sql 關鍵字強制觸發）跑 Eagle Eye + Spock（worktree isolation），共三輪來回：
+  - 第一輪抓到 2 個實質 bug：同天重複打分會讓 `latest_rankings()` 回傳重複 ticker（表沒有 UNIQUE constraint）、`score_date` 無格式驗證導致字典序排序悄悄選錯「最新一筆」且不報錯
+  - 第二輪（method_version 加入後）Eagle Eye 抓到本次最大的一個：portfolio-db 是 per-machine DB、這台機器手動修的 schema 不會同步到 Air/NB，那些機器 pull 到新 code 後下次 `rank add` 會直接 crash（`no such column: method_version`）
+  - 補寫 `migrations/m002_rankings_schema_hardening.py`（idempotent、dry-run+apply，跟既有 m001 同 pattern）處理三種 DB 現況，含 dedup 邏輯（同組重複保留最後寫入那筆）
+  - 過程中 `migration_002.log`（本機真實檔案）被雙方審查角色的驗證腳本意外寫入測試雜訊，Sir 確認內容 100% 非真實資料後刪除
+- 兩位審查角色最終都給 CLEAR 🖖：Spock 認可 rebuild 邏輯、UNIQUE key 刻意排除 method_version 的設計、ALTER vs 整表重建的取捨；Eagle Eye 獨立復現 crash 場景並驗證修復、dedup 正確性、dry-run 安全性
+- 全套 pytest 66/66（新增 `test_ranking.py` 20 個 + `test_migration_002.py` 11 個）
+- **outstanding**：Dropbox-synced 主檔 `scratch/20260527-投組初步想法.md` 第九節（Kelly）尚未同步反映 7/6 session 的 G-trajectory 延伸，`method_version=V1.1` 是 JV 的判斷、非 Sir 明訂版號字串；Air/NB pull 到這批 code 後仍需各自手動跑一次 `python -m portfoliodb.migrations.m002_rankings_schema_hardening --apply` ^ck-260708-rankings-feature

@@ -49,9 +49,9 @@ DB / credentials 走 per-OS app-data dir（`db.APP_DIR`）、跨平台分流、*
 ---
 
 ## 資料庫結構
-*last updated: 2026-05-26*
+*last updated: 2026-07-08*
 
-12 張資料表：
+13 張資料表：
 
 | 資料表 | 用途 |
 |--------|------|
@@ -67,6 +67,7 @@ DB / credentials 走 per-OS app-data dir（`db.APP_DIR`）、跨平台分流、*
 | `companies` | **Issuer 層**（company_id PK e.g. "TSMC"、display_name、notes）|
 | `instruments` | **Security 層**（instrument_id PK、ticker UNIQUE canonical key、market、currency、company_id nullable FK、security_type COMMON/ADR/ETF）|
 | `company_aliases` | Issuer 別名（alias、company_id FK、kind name_zh/name_en/abbr）|
+| `rankings` | 個股排名快照（ticker/method/method_version/score_date/headline_score/weight_pct/source/notes，2026-07-08 加入）|
 
 關鍵設計：
 - **兩層所有權**：`accounts.legal_owner_id`（戶頭掛誰名下）+ `accounts.economic_owner_id`（錢實際是誰的）。「戶頭借名」場景必備 — 例如父親名下實際是兒子的資產
@@ -79,7 +80,9 @@ DB / credentials 走 per-OS app-data dir（`db.APP_DIR`）、跨平台分流、*
 - 交易紀錄採 **雙重記帳**：一筆 BUY 同時更新持股（shares 增加、均價重算）和現金（扣款）
 - 均價計算採 **加權平均成本法**
 - 計畫下單執行後自動連結到實際交易紀錄（`linked_transaction_id`）
-- `get_user_summary(username)` 走 **economic owner**（看「真實 portfolio」、不看名義人） ^ck-d59a01-8
+- `get_user_summary(username)` 走 **economic owner**（看「真實 portfolio」、不看名義人）
+- **個股排名不綁單一方法論**（2026-07-08）：`rankings` 表存快照（ticker/method/score_date/headline_score/…），不是計算引擎——PEG（Lynch 式、分數越低越好）、Kelly f*（越高越好）、V1 15 分模型（掌握度+估值吸引力+長期品質、越高越好）三種方法論的排名方向定義在 `utils/constants.RANKING_DIRECTION`（顯式 dict，非集合排除法——2026-07-08 Spock review 後從 `RANKING_LOWER_IS_BETTER` 改的，避免新增 method 忘記登記時靜默用錯方向）。DB 只負責存 + 依方向排序、不重算分數（分數怎麼算見 `../peg` skill + Dropbox-synced `scratch/20260527-投組初步想法.md`）
+- **`rankings.method_version` 追蹤方法論演進**（2026-07-08）：Sir 的排名框架還在演進中（不是凍結規格）——例如 Kelly 在 7/6 session 引入「G-trajectory 當 b 值 proxy」的算法，還沒寫回 Dropbox-synced 主檔 `scratch/20260527-投組初步想法.md` 第九節。`method_version` 是自由文字欄位（非嚴格 semver，因為這是活文件不是程式碼發布），讓同一 method 底下不同規則版本算出來的分數不會被誤當同一把尺比較。目前回填：PEG 13 筆中的 7 筆標 `V1`（peg skill 方法論本身沒改版）、Kelly 6 筆標 `V1.1`（反映 7/6 的 G-trajectory 延伸，非主檔原文）——**這個版號是 JV 的判斷、不是 Sir 明訂，主檔本身尚未同步更新這個 section，值得之後回頭對齊** ^ck-d59a01-8
 
 ---
 
@@ -105,6 +108,7 @@ portfoliodb/
     fx_service.py            ← 匯率抓取與換算
     portfolio_service.py     ← 彙總摘要與損益計算 + family breakdown
     sync_service.py          ← 券商同步與 CSV 匯入的協調層
+    ranking_service.py       ← 個股排名快照（PEG/Kelly/15分模型）存取，不計算分數
 
   brokers/
     config.py                ← 憑證管理（讀寫 credentials.json）
@@ -118,6 +122,8 @@ portfoliodb/
   migrations/                ← 一次性 DB 升級腳本（dry-run + apply + idempotent）
     m001_canonical_ticker_and_instruments.py
                              ← canonical ticker backfill + companies / instruments / aliases seed
+    m002_rankings_schema_hardening.py
+                             ← rankings 表補 UNIQUE(ticker,method,score_date) + method_version 欄位（dedup 保留最新一筆）——**每台機器各自的本機 DB 都要手動跑一次**（single-machine DB、不隨 git pull 自動套用）
 
   utils/
     constants.py             ← 市場、幣別、稅率定義
@@ -129,8 +135,10 @@ tests/                       ← pytest（tmp_db fixture 隔離正式 DB）
   conftest.py
   test_ticker_canonical.py   ← 11 test、canonical_ticker 規則
   test_migration_001.py      ← 8 test、backfill + idempotent + identity
+  test_migration_002.py      ← 11 test、rankings 表補 UNIQUE/method_version + dedup + idempotent
   test_review_orders.py      ← 3 test、canonical aggregation + ADR/普通股不合併
   test_price_warnings.py     ← 3 test、yfinance noise capture
+  test_ranking.py            ← 20 test、ranking 方向排序 + canonicalization + 歷史查詢 + method_version
 ``` ^ck-c47767-10
 
 ---
@@ -172,6 +180,7 @@ price    get / batch              Yahoo Finance 即時報價
 summary  account / user / all / breakdown  投資組合摘要
 fx       rate / rates             匯率查詢
 sync     sinopac / fubon / firstrade / scb / credentials  自動化同步
+rank     add / list / show        個股排名快照（PEG / Kelly f* / 15分模型）
 ```
 
 **`order add` 新 syntax**（signed shorthand、最小 friction）：
@@ -192,6 +201,12 @@ sync     sinopac / fubon / firstrade / scb / credentials  自動化同步
 - **個股 concentration 加 `intent` column**：JOIN PENDING orders、annotation 形式 `→加 500 @1180` / `→減 200 @5400`、沒 plan 的 cell 空白（zero visual cost）
 - Flat positions：每個 holding × account + 每個 cash position 都單獨一行、按 base-currency 市值排序
 - 預設 base = TWD、用 `--currency USD` 切換 ^ck-897bce-14
+
+**`rank add <ticker> <peg|kelly|fifteen_point> <headline_score>`**（2026-07-08 加入）：
+- `--date`（default 今天）/ `--weight`（Kelly 常用）/ `--source`（引用出處）/ `--notes`（支撐細節，如 PEG 的 G/FwdPE、Kelly 的 G-trajectory/b）/ `--market`（裸數字 TW ticker 要補 suffix 時給 hint）/ `--framework-version`（自由文字、標這筆分數是哪個版本的方法論算出來的，如 `V1`/`V1.1`；框架還在演進中、選填但建議填）
+- `rank list --method <method> --latest`：每檔最新一筆、依該 method 的「越低越好 / 越高越好」方向排序（PEG 越低越好，Kelly / 15分模型越高越好）
+- `rank show <ticker>`：該檔所有方法的歷史快照，時間序
+- DB 不算分數、只存 + 排序；分數怎麼算見 `../peg` skill（PEG）與 Dropbox-synced `scratch/20260527-投組初步想法.md`（15分模型 + Kelly 定位）
 
 ---
 

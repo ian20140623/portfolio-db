@@ -151,6 +151,35 @@ class CashTransaction:
 
 
 @dataclass
+class Ranking:
+    id: int
+    ticker: str
+    method: str
+    method_version: Optional[str]
+    score_date: str
+    headline_score: Optional[float]
+    weight_pct: Optional[float]
+    source: Optional[str]
+    notes: Optional[str]
+    created_at: str
+
+    @classmethod
+    def from_row(cls, row) -> "Ranking":
+        return cls(
+            id=row["id"],
+            ticker=row["ticker"],
+            method=row["method"],
+            method_version=row["method_version"],
+            score_date=row["score_date"],
+            headline_score=row["headline_score"],
+            weight_pct=row["weight_pct"],
+            source=row["source"],
+            notes=row["notes"],
+            created_at=row["created_at"],
+        )
+
+
+@dataclass
 class PlannedOrder:
     id: int
     account_id: int
