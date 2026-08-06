@@ -45,3 +45,17 @@ Family wealth planning 議題（含借名 unwind / Athena framework / Level 0-4 
 ```
 ln -s ~/Library/CloudStorage/Dropbox/PJHub/portfolio-db/memory ~/.claude/projects/-Users-ianchang-Projects-portfolio-db/memory
 ``` ^ck-family-memory-pointer
+
+## Agent skills
+
+### Issue tracker
+
+Issues and PRDs are tracked in GitHub Issues for `ian20140623/portfolio-db`. See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+Use the five default canonical triage labels. See `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+This is a single-context repo using root `CONTEXT.md` and `docs/adr/`. See `docs/agents/domain.md`.

@@ -410,3 +410,12 @@
   - Kelly 公式 p vs b：7/6 那次算 f\* 只把 G-trajectory 當 b（賠率）的 proxy，沒有動 p（勝率/持續機率）。Sir 點出六檔（NVDA/台積電/台達電/LITE/欣興/MU）本質上都在賭同一個 AI capex 主題，naive 加總各自 f\*（0.85+0.75+0.65+0.64+0.60+0.56=4.05）不是真正的多資產 Kelly，正確算法要考慮相關性、通常會自然留下現金殘值
   - 台積電案例：成長率最低（G-trajectory=2、b=1.5）但 Sir 主觀認為最抗跌，這正是「b 低、p 高」的具體例子——`../peg` skill 早就寫過「PEG 0.61 = 確定性溢價」的結論，今晚把同一個邏輯延伸到 Kelly。JV 現場查了台積電的 p（毛利率跨週期穩定度 yfinance 財報 2022-2025：59.6%→54.4%→56.1%→59.9%，最新季 66.2%；2nm 良率對三星/Intel 的技術差距沒有縮小；晶圓代工市占 2026 Q1 來到 72.3%、持續上升），三條證據方向一致，示意性把台積電 p 從反推隱含 0.85 調到 0.90 後，f\* 從 0.75→0.83，重新正規化後從第二名追平 NVDA 變並列第一
 - **outstanding**：先進光還差 45,000 股（被每日額度擋住，等明天額度重置）、台光電還剩 3,000 股沒賣；台積電的 Kelly 重算只是示意，其他五檔（NVDA/台達電/LITE/欣興/MU）還沒做同等的 p 實證研究（毛利穩定度/技術門檻/市占趨勢），不是公平比較，Sir 問要不要接著查其他五檔、還沒回答；Dropbox-synced 主檔仍未同步反映今晚的 p/b 分離討論 ^ck-260710-execution-and-kelly-pb
+
+## 2026-08-06（四）
+
+### 13:28 [Mac mini] 券商截圖對帳入庫 + Agent skills 專案設定
+- **投組資料更新**：依 Sir 上傳的永豐與渣打成交／持倉截圖更新本機 PortfolioDB。台股完成台積電 2330 全數賣出、欣興 3037 買進及禾伸堂 3026 對帳；渣打父親帳戶記入兩輪調整，包含 NVDA 賣出、DRAM 與 LITE 買進。最終渣打持股為 DRAM 22,300 股、LITE 1,413 股、NVDA 2,864 股、TSM 1,575 股
+- **資料安全**：最後一輪渣打更新前建立 cold backup `portfolio-20260730-225306.db`。截圖沒有揭露交易費用，因此相關交易以 fee=0 入帳並在 notes 明記「fee unavailable」，不虛構成本
+- **SCB 多幣別限制**：SCB 帳戶主幣別是 SGD，但持股與成交是 USD；目前 `transaction_service` 會用 `account.currency` 當交易幣別並同步改現金，若直接走一般 `tx` 指令會把 USD 成交誤當 SGD。這次以 USD 交易紀錄 + 持股快照直接對帳，且因截圖沒有現金頁而刻意不改 cash。這是既有模型／服務缺口，未修復前不得用一般 `tx` 指令處理此帳戶的 USD 成交
+- **Agent skills 設定**：在 `CLAUDE.md` 宣告 GitHub Issues、五個 canonical triage labels 與 single-context domain docs；新增 `docs/agents/{issue-tracker,triage-labels,domain}.md`，供工程 skills 使用
+- **Eagle Eye QA**：設定內容 happy path 5/5、edge 3/3、檔案整合檢查皆通過，`git diff --check` clean；唯一環境失敗是本機 `gh auth status` 顯示 `ian20140623` token 已失效，因此 GitHub Issues 工作流需重新登入後才能實際使用（不影響本次 git commit/push） ^ck-260806-broker-reconcile-agent-skills

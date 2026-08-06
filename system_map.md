@@ -1,5 +1,5 @@
 # 帳務管理系統 — 功能說明
-*last updated: 2026-05-26*
+*last updated: 2026-08-06*
 
 > **給未來 AI 的說明**
 > 共用指引見 [`../shared/LOG_GUIDE.md`](../shared/LOG_GUIDE.md)
@@ -87,7 +87,7 @@ DB / credentials 走 per-OS app-data dir（`db.APP_DIR`）、跨平台分流、*
 ---
 
 ## 程式碼結構
-*last updated: 2026-05-26*
+*last updated: 2026-08-06*
 
 ```
 portfoliodb/
@@ -139,12 +139,17 @@ tests/                       ← pytest（tmp_db fixture 隔離正式 DB）
   test_review_orders.py      ← 3 test、canonical aggregation + ADR/普通股不合併
   test_price_warnings.py     ← 3 test、yfinance noise capture
   test_ranking.py            ← 20 test、ranking 方向排序 + canonicalization + 歷史查詢 + method_version
+
+docs/agents/                ← 工程 agent 的 repo-local 設定
+  issue-tracker.md           ← GitHub Issues 操作慣例（依賴本機 gh 已登入）
+  triage-labels.md           ← 五個 canonical triage label 對應
+  domain.md                  ← single-context domain docs 讀取規則
 ``` ^ck-c47767-10
 
 ---
 
 ## 資料攝取（broker 整合）
-*last updated: 2026-05-24*
+*last updated: 2026-08-06*
 
 實務上 3 條路徑、依券商現有 API 可達性決定：
 
@@ -160,6 +165,11 @@ tests/                       ← pytest（tmp_db fixture 隔離正式 DB）
 - 各家「庫存總市值」公式不同：永豐 = 賣出實得（毛市值 × 0.995575、扣 0.3% 證交稅 + 0.1425% 手續費）/ 富邦庫存頁 = 同上 / 富邦即時庫存頁 = 毛市值 / Firstrade = 純市值 / SCB = USD 純市值 + SGD 換算 view
 - 截圖只給「股數+損益」時、反推均價公式：`均價 = 現價 × tax_factor − 損益/股數`（永豐/富邦套 0.995575、Firstrade/SCB 套 1.0）
 - Cross-source price check：yfinance + cnyes 鉅亨網雙源驗證 ^ck-2517d3-12
+
+**SCB 多幣別交易限制**（2026-08-06 確認）：
+- SCB SG account 的 `accounts.currency` 是 SGD，但該帳戶可持有並交易 USD 股票；目前 `transaction_service` 以 `account.currency` 標示成交幣別並更新同幣別 cash，無法正確表達這類跨幣別成交
+- 在服務層加入 explicit trade currency 前，SCB 的 USD 截圖成交不可直接使用一般 `tx buy/sell`；應以 `transactions.currency='USD'` 保存真實成交、依持股快照 reconciliation，並只在有可靠現金頁／對帳單時更新 cash
+- 截圖沒有 fee 時一律記錄為未知（目前資料以 fee=0 + notes 說明），不得推測；因此由該截圖算出的 realized cost / cash movement 也不能視為完整券商帳單 ^ck-260806-scb-multicurrency-gap
 
 ---
 
