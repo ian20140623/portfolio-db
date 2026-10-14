@@ -419,3 +419,12 @@
 - **SCB 多幣別限制**：SCB 帳戶主幣別是 SGD，但持股與成交是 USD；目前 `transaction_service` 會用 `account.currency` 當交易幣別並同步改現金，若直接走一般 `tx` 指令會把 USD 成交誤當 SGD。這次以 USD 交易紀錄 + 持股快照直接對帳，且因截圖沒有現金頁而刻意不改 cash。這是既有模型／服務缺口，未修復前不得用一般 `tx` 指令處理此帳戶的 USD 成交
 - **Agent skills 設定**：在 `CLAUDE.md` 宣告 GitHub Issues、五個 canonical triage labels 與 single-context domain docs；新增 `docs/agents/{issue-tracker,triage-labels,domain}.md`，供工程 skills 使用
 - **Eagle Eye QA**：設定內容 happy path 5/5、edge 3/3、檔案整合檢查皆通過，`git diff --check` clean；唯一環境失敗是本機 `gh auth status` 顯示 `ian20140623` token 已失效，因此 GitHub Issues 工作流需重新登入後才能實際使用（不影響本次 git commit/push） ^ck-260806-broker-reconcile-agent-skills
+
+## 2026-10-14（三）
+
+### 18:25 [Mac mini] 截圖對帳入庫與私人總覽收工
+- 依使用者授權，分批核對帳戶所有權、持股與現金後更新 PRD 正式庫；每批先做 SQLite 一致備份，原子交易後回讀與 integrity check。
+- 持股快照直接對帳，未由差額捏造成交；已提供的實際成交另行記錄，費稅未揭露者明記未知。未觀察成本保留但不視為已對帳。
+- 另建立 owner-private Sites 總覽：股票／公司歸戶、帳戶展開、市值排序、商品与經濟／法律所有權分布。網站是唯讀靜態快照，來源及報表層修正明示，並非正式 DB 的即時同步畫面。
+- 正式庫尚有外幣現金與部分持股成本待核對；相關明細及海外配置討論保存在本次私有工作交付檔，不寫入此 repo。
+- 本輪未修改 portfolio-db 程式碼、schema 或服務設定。
